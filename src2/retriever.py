@@ -81,12 +81,12 @@ class Retriever:
         return [self._to_chunk(doc, score) for doc, score in pairs]
 
     def retrieve_with_threshold(
-        self, query: str, top_k: int = 10, min_score: float = 0.30
+        self, query: str, top_k: int = 3, min_score: float = 0.30
     ) -> list[RetrievedChunk]:
         """Retrieve and filter by minimum similarity score."""
         return [c for c in self.retrieve(query, top_k=top_k) if c.score >= min_score]
 
-    def build_context(self, query: str, top_k: int = 5, min_score: float = 0.25) -> str:
+    def build_context(self, query: str, top_k: int = 3, min_score: float = 0.25) -> str:
         """Retrieve and format as a single context string for LLM injection."""
         chunks = self.retrieve_with_threshold(query, top_k=top_k, min_score=min_score)
         if not chunks:
