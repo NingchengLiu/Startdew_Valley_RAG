@@ -54,7 +54,7 @@ def build_index(
     print(f"Strategy '{strategy}' → {len(vs_chunks)} chunks")
 
     # ── Embed & build (lab pattern: FAISS.from_documents) ─────────────────────
-    emb = build_embeddings(model_name)
+    emb = build_embeddings()
     t0  = time.time()
     vs  = FAISS.from_documents(vs_chunks, emb)
     elapsed = time.time() - t0

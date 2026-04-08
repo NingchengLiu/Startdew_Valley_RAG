@@ -1,44 +1,35 @@
-"""
-embeddings.py — LocalEmbedder + LocalEmbeddingsWrapper
-                Matches the exact pattern used in class labs.
+from dotenv import load_dotenv
+from pathlib import Path
+load_dotenv(Path(__file__).parent.parent / ".env")
 
-Usage
------
-    from embeddings import embeddings   # drop-in for FAISS.from_documents()
-
-Or import the components separately:
-    from embeddings import LocalEmbedder, LocalEmbeddingsWrapper, build_embeddings
-"""
-
-from __future__ import annotations
-
+from openai import OpenAI
+import os
 from langchain.embeddings.base import Embeddings
-from sentence_transformers import SentenceTransformer
 
-# ── Default model (matches lab) ───────────────────────────────────────────────
+A2_BASE_URL = os.getenv("A2_BASE_URL", "https://rsm-8430-a2.bjlkeng.io")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "")
+EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
+BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+BATCH_SIZE = 100
 
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-
-
-# ── Lab-pattern embedder ──────────────────────────────────────────────────────
 
 class LocalEmbedder:
-    """Thin wrapper around SentenceTransformer — identical to the lab version."""
-
-    def __init__(self, model_name: str = EMBEDDING_MODEL):
-        print(f"[embeddings] Loading model: {model_name}")
-        self._model = SentenceTransformer(model_name)
+    def __init__(self):
+        self._client = OpenAI(base_url=A2_BASE_URL, api_key=LLM_API_KEY)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        return self._model.encode(texts, convert_to_numpy=True).tolist()
+        all_embeddings = []
+        for i in range(0, len(texts), BATCH_SIZE):
+            batch = texts[i:i + BATCH_SIZE]
+            response = self._client.embeddings.create(
+                input=batch,
+                model=EMBEDDING_MODEL,
+            )
+            all_embeddings.extend([item.embedding for item in response.data])
+        return all_embeddings
 
 
 class LocalEmbeddingsWrapper(Embeddings):
-    """
-    LangChain Embeddings wrapper — required by FAISS.from_documents().
-    Identical structure to the lab's LocalEmbeddingsWrapper.
-    """
-
     def __init__(self, embedder: LocalEmbedder):
         self.embedder = embedder
 
@@ -46,14 +37,16 @@ class LocalEmbeddingsWrapper(Embeddings):
         return self.embedder.embed_documents(texts)
 
     def embed_query(self, text: str) -> list[float]:
-        return self.embedder.embed_documents([text])[0]
+        # BGE models need a prefix for queries only
+        prefixed = BGE_QUERY_PREFIX + text
+        response = self.embedder._client.embeddings.create(
+            input=[prefixed],
+            model=EMBEDDING_MODEL,
+        )
+        return response.data[0].embedding
 
 
-def build_embeddings(model_name: str = EMBEDDING_MODEL) -> LocalEmbeddingsWrapper:
-    """Convenience factory — returns a ready-to-use LangChain embeddings object."""
-    return LocalEmbeddingsWrapper(LocalEmbedder(model_name))
-
-
-# ── Module-level singleton (matches `embeddings = LocalEmbeddingsWrapper(embedder)` in lab) ──
+def build_embeddings() -> LocalEmbeddingsWrapper:
+    return LocalEmbeddingsWrapper(LocalEmbedder())
 
 embeddings = build_embeddings()

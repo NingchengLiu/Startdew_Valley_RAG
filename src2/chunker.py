@@ -40,10 +40,9 @@ SPLITTER_CONFIGS: dict[str, dict] = {
         separator="\n",
     ),
     "section_token": dict(
-        # matches the model used for embeddings
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        tokens_per_chunk=256,
-        chunk_overlap=30,
+    model_name="BAAI/bge-base-en-v1.5",
+    tokens_per_chunk=256,
+    chunk_overlap=30,
     ),
 }
 

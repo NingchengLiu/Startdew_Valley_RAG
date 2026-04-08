@@ -53,7 +53,6 @@ class Retriever:
     def __init__(
         self,
         index_dir:  str | Path,
-        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
     ):
         index_dir = Path(index_dir)
         if not (index_dir / "index.faiss").exists():
@@ -63,7 +62,7 @@ class Retriever:
             )
 
         print(f"[retriever] Loading index from: {index_dir}")
-        self._emb = build_embeddings(model_name)
+        self._emb = build_embeddings()
         self._vs  = FAISS.load_local(
             str(index_dir),
             self._emb,

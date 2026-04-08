@@ -28,8 +28,11 @@ Environment variables
 
 from __future__ import annotations
 
-import os
+from dotenv import load_dotenv
 from pathlib import Path
+load_dotenv(Path(__file__).parent.parent / ".env")
+
+import os
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException

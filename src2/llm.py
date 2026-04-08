@@ -21,6 +21,10 @@ Both are handled transparently; callers always receive a clean LLMResponse.
 
 from __future__ import annotations
 
+from dotenv import load_dotenv
+from pathlib import Path
+load_dotenv(Path(__file__).parent.parent / ".env")
+
 import os
 import re
 from dataclasses import dataclass
