@@ -10,7 +10,7 @@ A2_BASE_URL = os.getenv("A2_BASE_URL", "https://rsm-8430-a2.bjlkeng.io")
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 EMBEDDING_MODEL = "BAAI/bge-base-en-v1.5"
 BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
-BATCH_SIZE = 100
+BATCH_SIZE = 25
 
 
 class LocalEmbedder:

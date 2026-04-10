@@ -145,6 +145,8 @@
             display: flex;
             margin-bottom: 10px;
             animation: slideIn 0.3s ease-out;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         @keyframes slideIn {
@@ -159,11 +161,11 @@
         }
 
         .message.user {
-            justify-content: flex-end;
+            align-items: flex-end;
         }
 
         .message.bot {
-            justify-content: flex-start;
+            align-items: flex-start;
         }
 
         .message-content {
@@ -171,6 +173,29 @@
             padding: 12px 16px;
             border-radius: 8px;
             word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message-content p {
+            margin: 8px 0;
+        }
+
+        .message-content p:first-child {
+            margin-top: 0;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content strong {
+            font-weight: 600;
+            color: inherit;
+        }
+
+        .message-content em {
+            font-style: italic;
+            opacity: 0.9;
         }
 
         .user .message-content {
@@ -190,10 +215,95 @@
         .bot-info {
             font-size: 11px;
             color: #666;
-            margin-top: 4px;
+            margin-top: 8px;
             display: flex;
-            gap: 12px;
+            gap: 8px;
+            align-items: center;
             flex-wrap: wrap;
+        }
+
+        .agent-badge {
+            background: linear-gradient(135deg, #90C590 0%, #7DB885 100%);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(45, 90, 61, 0.2);
+            display: inline-block;
+            margin-top: 6px;
+            margin-bottom: 4px;
+        }
+
+        .details-toggle {
+            background: linear-gradient(135deg, #D4A574 0%, #C49060 100%);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-block;
+            text-align: left;
+            gap: 4px;
+            box-shadow: 0 1px 3px rgba(45, 90, 61, 0.15);
+            transition: all 0.2s ease;
+            margin-top: 6px;
+        }
+
+        .details-toggle:hover {
+            background: linear-gradient(135deg, #C49060 0%, #B87F50 100%);
+            box-shadow: 0 2px 6px rgba(45, 90, 61, 0.25);
+        }
+
+        .details-toggle:active {
+            transform: scale(0.98);
+        }
+
+        .details-toggle.expanded::before {
+            content: '▼ ';
+        }
+
+        .details-toggle:not(.expanded)::before {
+            content: '▶ ';
+        }
+
+        .collapsible-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .collapsible-details.expanded {
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 8px;
+        }
+
+        .details-content {
+            background: linear-gradient(135deg, #F5F0E8 0%, #EFEFEF 100%);
+            padding: 10px 12px;
+            border-radius: 6px;
+            border-left: 3px solid #D4A574;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .detail-section {
+            margin-bottom: 8px;
+        }
+
+        .detail-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #3D6B4F;
+            margin-bottom: 2px;
         }
 
         .intent-badge {
@@ -432,6 +542,40 @@
             }
         }
 
+        // Format message content (handle markdown-like syntax and newlines)
+        function formatMessageContent(text) {
+            const div = document.createElement('div');
+            div.style.whiteSpace = 'pre-wrap';
+            div.style.wordWrap = 'break-word';
+            
+            // Split by newlines to preserve line breaks
+            const lines = text.split('\n');
+            
+            lines.forEach((line, idx) => {
+                const p = document.createElement('p');
+                p.style.margin = '8px 0';
+                
+                // Handle bullets
+                if (line.trim().startsWith('-')) {
+                    p.style.marginLeft = '16px';
+                    p.style.marginTop = '4px';
+                    p.style.marginBottom = '4px';
+                    line = line.replace(/^-\s*/, '• ');
+                }
+                
+                // Parse bold text (**text**)
+                let html = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Parse italic text (*text*)
+                html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+                
+                p.innerHTML = html;
+                div.appendChild(p);
+            });
+            
+            return div;
+        }
+
         // Add message to chat
         function addMessage(content, isUser, metadata = null) {
             clearEmptyState();
@@ -441,60 +585,174 @@
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.textContent = content;
+            
+            if (isUser) {
+                contentDiv.textContent = content;
+            } else {
+                // Format bot responses with markdown support
+                contentDiv.appendChild(formatMessageContent(content));
+            }
 
             messageDiv.appendChild(contentDiv);
 
             if (!isUser && metadata) {
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'bot-info';
-
-                // Intent badge
-                if (metadata.intent_type) {
-                    const intentBadge = document.createElement('span');
-                    intentBadge.className = 'intent-badge';
-                    intentBadge.textContent = metadata.intent_type.toUpperCase();
-                    infoDiv.appendChild(intentBadge);
+                // Agent badge (inline)
+                if (metadata.agent_type) {
+                    const agentBadge = document.createElement('span');
+                    agentBadge.className = 'agent-badge';
+                    agentBadge.style.display = 'inline-block';
+                    agentBadge.style.marginTop = '8px';
+                    agentBadge.textContent = '🤖 ' + metadata.agent_type;
+                    messageDiv.appendChild(agentBadge);
                 }
 
-                // Confidence
-                if (metadata.intent_confidence !== undefined) {
-                    const confDiv = document.createElement('div');
-                    confDiv.className = 'confidence';
-                    const fillWidth = Math.round(metadata.intent_confidence * 100);
-                    confDiv.innerHTML = `
-                        <span>${Math.round(metadata.intent_confidence * 100)}%</span>
-                        <div class="confidence-bar">
-                            <div class="confidence-fill" style="width: ${fillWidth}%"></div>
-                        </div>
-                    `;
-                    infoDiv.appendChild(confDiv);
-                }
+                // "See more details" button - appears at the bottom
+                if ((metadata.sources && metadata.sources.length > 0) || metadata.intent_confidence !== undefined || metadata.session_id || metadata.action_result) {
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.className = 'details-toggle';
+                    toggleBtn.textContent = 'See more details';
+                    toggleBtn.style.display = 'block';
+                    toggleBtn.style.marginTop = '8px';
+                    toggleBtn.onclick = function(e) {
+                        e.preventDefault();
+                        const detailsDiv = this.nextElementSibling;
+                        this.classList.toggle('expanded');
+                        detailsDiv.classList.toggle('expanded');
+                    };
+                    messageDiv.appendChild(toggleBtn);
 
-                messageDiv.appendChild(infoDiv);
+                    // Collapsible details section
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.className = 'collapsible-details';
+                    
+                    const detailsContent = document.createElement('div');
+                    detailsContent.className = 'details-content';
 
-                // Sources
-                if (metadata.sources && metadata.sources.length > 0) {
-                    const sourceDiv = document.createElement('div');
-                    sourceDiv.className = 'source';
-                    sourceDiv.innerHTML = '<strong>Sources:</strong> ';
-                    metadata.sources.forEach((source, idx) => {
-                        const link = document.createElement('a');
-                        link.href = source.url;
-                        link.target = '_blank';
-                        link.className = 'source-link';
-                        link.textContent = source.page_title;
-                        sourceDiv.appendChild(link);
-                        if (idx < metadata.sources.length - 1) {
-                            sourceDiv.appendChild(document.createTextNode(', '));
+                    // Session ID
+                    if (metadata.session_id) {
+                        const sessionSection = document.createElement('div');
+                        sessionSection.className = 'detail-section';
+                        const sessionLabel = document.createElement('div');
+                        sessionLabel.className = 'detail-label';
+                        sessionLabel.textContent = 'Session ID';
+                        sessionSection.appendChild(sessionLabel);
+                        const sessionText = document.createElement('div');
+                        sessionText.style.fontSize = '11px';
+                        sessionText.style.fontFamily = 'monospace';
+                        sessionText.style.wordBreak = 'break-all';
+                        sessionText.textContent = metadata.session_id;
+                        sessionSection.appendChild(sessionText);
+                        detailsContent.appendChild(sessionSection);
+                    }
+
+                    // Action Result (parameters)
+                    if (metadata.action_result) {
+                        const actionSection = document.createElement('div');
+                        actionSection.className = 'detail-section';
+                        const actionLabel = document.createElement('div');
+                        actionLabel.className = 'detail-label';
+                        actionLabel.textContent = 'Action Details';
+                        actionSection.appendChild(actionLabel);
+                        
+                        if (metadata.action_result.action_type) {
+                            const actionType = document.createElement('div');
+                            actionType.style.fontSize = '12px';
+                            actionType.textContent = '📋 ' + metadata.action_result.action_type;
+                            actionSection.appendChild(actionType);
                         }
-                    });
-                    messageDiv.appendChild(sourceDiv);
+                        
+                        if (metadata.action_result.parameters && Object.keys(metadata.action_result.parameters).length > 0) {
+                            const paramsLabel = document.createElement('div');
+                            paramsLabel.style.fontSize = '11px';
+                            paramsLabel.style.marginTop = '6px';
+                            paramsLabel.style.fontWeight = 'bold';
+                            paramsLabel.textContent = 'Parameters:';
+                            actionSection.appendChild(paramsLabel);
+                            
+                            Object.entries(metadata.action_result.parameters).forEach(([key, value]) => {
+                                const paramLine = document.createElement('div');
+                                paramLine.style.fontSize = '11px';
+                                paramLine.style.marginLeft = '12px';
+                                paramLine.textContent = `• ${key}: ${value}`;
+                                actionSection.appendChild(paramLine);
+                            });
+                        }
+                        
+                        detailsContent.appendChild(actionSection);
+                    }
+
+                    // Intent and Confidence
+                    if (metadata.intent_type || metadata.intent_confidence !== undefined) {
+                        const intentSection = document.createElement('div');
+                        intentSection.className = 'detail-section';
+                        const intentLabel = document.createElement('div');
+                        intentLabel.className = 'detail-label';
+                        intentLabel.textContent = 'Query Intent';
+                        intentSection.appendChild(intentLabel);
+                        
+                        const intentText = document.createElement('div');
+                        if (metadata.intent_type) {
+                            intentText.textContent = metadata.intent_type.toUpperCase();
+                            if (metadata.intent_confidence !== undefined) {
+                                intentText.textContent += ` • Confidence: ${Math.round(metadata.intent_confidence * 100)}%`;
+                            }
+                        }
+                        intentSection.appendChild(intentText);
+                        detailsContent.appendChild(intentSection);
+                    }
+
+                    // Sources
+                    if (metadata.sources && metadata.sources.length > 0) {
+                        const sourceSection = document.createElement('div');
+                        sourceSection.className = 'detail-section';
+                        const sourceLabel = document.createElement('div');
+                        sourceLabel.className = 'detail-label';
+                        sourceLabel.textContent = 'Sources (' + metadata.sources.length + ')';
+                        sourceSection.appendChild(sourceLabel);
+                        
+                        metadata.sources.forEach((source, idx) => {
+                            const sourceItem = document.createElement('div');
+                            sourceItem.style.marginBottom = '6px';
+                            sourceItem.style.fontSize = '9px';
+                            const link = document.createElement('a');
+                            link.href = source.url;
+                            link.target = '_blank';
+                            link.className = 'source-link';
+                            link.style.color = '#3D6B4F';
+                            link.style.textDecoration = 'underline';
+                            link.textContent = source.page_title + ' (score: ' + (source.score || 0).toFixed(2) + ')';
+                            sourceItem.appendChild(link);
+                            sourceSection.appendChild(sourceItem);
+                        });
+                        detailsContent.appendChild(sourceSection);
+                    }
+
+                    detailsDiv.appendChild(detailsContent);
+                    messageDiv.appendChild(detailsDiv);
                 }
             }
 
             chatArea.appendChild(messageDiv);
             chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // Initialize session ID (stored in localStorage)
+        function getOrCreateSessionId() {
+            let sessionId = localStorage.getItem('stardew_session_id');
+            if (!sessionId) {
+                sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('stardew_session_id', sessionId);
+            }
+            return sessionId;
+        }
+
+        // Display session info (optional - for debugging)
+        function updateSessionDisplay() {
+            const sessionId = getOrCreateSessionId();
+            const sessionDisplay = document.getElementById('session-display');
+            if (sessionDisplay) {
+                sessionDisplay.textContent = 'Session: ' + sessionId.slice(0, 20) + '...';
+            }
         }
 
         // Send message to API
@@ -517,6 +775,7 @@
             chatArea.scrollTop = chatArea.scrollHeight;
 
             try {
+                const sessionId = getOrCreateSessionId();
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: {
@@ -526,6 +785,7 @@
                         query: query,
                         top_k: 3,
                         include_reasoning: false,
+                        session_id: sessionId,
                     }),
                 });
 
@@ -543,6 +803,8 @@
                     intent_type: data.intent_type,
                     intent_confidence: data.intent_confidence,
                     sources: data.sources,
+                    session_id: data.session_id,
+                    action_result: data.action_result,
                 });
             } catch (error) {
                 // Remove loading indicator
@@ -570,7 +832,8 @@
             }
         });
 
-        // Focus input on load
+        // Initialize on page load
+        updateSessionDisplay();
         inputField.focus();
     </script>
 </body>

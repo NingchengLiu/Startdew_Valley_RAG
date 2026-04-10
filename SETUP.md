@@ -83,19 +83,31 @@ You can now ask questions like:
 - "Where can I find copper ore?"
 - "How do I marry Abigail?"
 
-## Running Tests
+## Testing
 
-In a new terminal (with venv activated):
+### Manual Testing
+See [TESTING_GUIDE_UI.md](TESTING_GUIDE_UI.md) for the 10-test comprehensive manual verification suite (browser-based).
+
+### Automated Test Suite
+`src2/tests/` contains 200+ unit and integration tests covering:
+- Embeddings and vector retrieval
+- Intent routing and classification
+- Semantic search (FAISS)
+- Action handling and parameter validation
+- Session management and conversation history
+- Error scenarios and edge cases
+
+Run tests in a new terminal (with venv activated):
 
 ```bash
 # All tests
-pytest tests/agent_tests/ -v
+pytest src2/tests/ -v
 
 # Specific test file
-pytest tests/agent_tests/test_orchestrator.py -v
+pytest src2/tests/test_orchestrator.py -v
 
 # With coverage report
-pytest tests/agent_tests/ --cov=src2 --cov-report=html
+pytest src2/tests/ --cov=src2 --cov-report=html
 ```
 
 **Expected:** 200+ tests pass ✅

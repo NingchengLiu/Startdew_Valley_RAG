@@ -134,8 +134,29 @@ class LLMClient:
         reasoning: Optional[str] = None
         answer: str              = ""
 
+        # Check if we have reasoning_content (Qwen3's chain-of-thought)
+        if hasattr(message, 'reasoning_content') and message.reasoning_content:
+            reasoning_text = message.reasoning_content.strip()
+            
+            # If content is None/empty, check if the answer is in reasoning_content
+            if not message.content:
+                # The model put everything in reasoning_content
+                # Try to extract the answer from it
+                if "{" in reasoning_text and "}" in reasoning_text:
+                    # Likely JSON in the reasoning_content, use it as answer
+                    answer = reasoning_text
+                    reasoning = None  # It wasn't really reasoning, it was the answer
+                else:
+                    # It's actual reasoning, no answer yet
+                    reasoning = reasoning_text
+                    answer = ""
+            else:
+                # We have both content and reasoning_content
+                reasoning = reasoning_text
+                answer = (message.content or "").strip()
+
         # Format A: structured content blocks (vLLM ≥ 0.8.4)
-        if isinstance(message.content, list):
+        elif isinstance(message.content, list):
             text_parts: list[str] = []
             for block in message.content:
                 btype = getattr(block, "type", None)
