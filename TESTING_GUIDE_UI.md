@@ -4,16 +4,31 @@
 
 **Server must be running:** `cd src2 && python -m uvicorn app:app --port 8000`
 
-All tests below use the **Browser UI**. Simply type in the message box and hit Send/Enter.
-
-The UI will:
-- ✅ Auto-generate a `session_id` on first message
-- ✅ Reuse the same session for all messages in that conversation
-- ✅ Display action questions with guided prompts and suggestions
-- ✅ Show validation errors with helpful guidance
-- ✅ Display the final action result when complete
+All tests use the **Browser UI**. Simply type in the message box and hit Send/Enter.
 
 ---
+
+## Test Plan & Checklist
+
+### Phase 1: Knowledge Base & Safety (Tests 1-4)
+- [ ] Test 1: Basic Query with session auto-generation
+- [ ] Test 2: Conversation Memory within same session
+- [ ] Test 3: Off-Topic Query rejection
+- [ ] Test 4: Unknown Intent handling
+
+### Phase 2: Complete Action Flows (Tests 5-7)
+- [ ] Test 5: Friendship Plan multi-turn (3 parameters)
+- [ ] Test 6: Farm Plan multi-turn (2 parameters)
+- [ ] Test 7: Save Favorites single-turn (auto-complete with villagers)
+
+### Phase 3: Invalid Parameter Handling (Tests 8-10)
+- [ ] Test 8: Friendship Plan with invalid heart level
+- [ ] Test 9: Farm Plan with invalid budget
+- [ ] Test 10: Save Favorites with misspelled/invalid names
+
+---
+
+## Phase 1: Knowledge Base & Safety
 
 ## Test 1: Basic Query (Session Auto-Generation)
 
@@ -27,122 +42,12 @@ The UI will:
 ### Expected Response:
 - ✅ Answer appears with farming advice
 - ✅ Sources appear below with wiki references
-- ✅ Session badge or ID visible (auto-generated)
+- ✅ Session ID visible (auto-generated)
 - ✅ Intent shows as `CROPS`
 
 ---
 
-## Test 2: Action Detection (Friendship Plan)
-
-**Purpose:** Verify action intent detection initiates multi-turn flow
-
-### Browser Steps:
-1. Go to **http://localhost:8000** (fresh conversation)
-2. Type: `Can you help me create a friendship plan to marry Abigail?`
-3. Hit Send
-
-### Expected Response:
-- ✅ System recognizes action intent
-- ✅ Guided question appears: **"Which villager do you want to romance?"**
-- ✅ Shows list of 11 villagers to choose from
-- ✅ **"Action in progress"** indicator appears
-- ✅ Session ID is generated and visible
-
-**Keep this tab open or note the URL for Test 3**
-
----
-
-## Test 3: Multi-Turn Friendship Plan (Full Flow - 3 Parameters)
-
-**Purpose:** Complete a full multi-turn action with parameter collection
-
-### Turn 1: Provide Villager
-1. **Type:** `Abigail`
-2. **Hit Send**
-
-**Expected:**
-- ✅ Success message: "✅ Great! Abigail it is!"
-- ✅ Next question appears: **"What's your current friendship level with Abigail?"**
-- ✅ Shows range guide (0/4/8/10 hearts with meanings)
-- ✅ Still shows **"Action in progress"**
-
-### Turn 2: Provide Current Hearts
-1. **Type:** `2`
-2. **Hit Send**
-
-**Expected:**
-- ✅ Success message: "✅ 2 hearts with Abigail..."
-- ✅ Next question appears: **"How many gifts can you give Abigail per week?"**
-- ✅ Shows frequency options (1/3/5/7 gifts with meanings)
-- ✅ Still shows **"Action in progress"**
-
-### Turn 3: Provide Gifts Per Week (Action Executes)
-1. **Type:** `3`
-2. **Hit Send**
-
-**Expected:**
-- ✅ Success message: "✅ Perfect! 3 gifts per week..."
-- ✅ **"Action in progress"** changes to `false`
-- ✅ Action result displays with friendship plan details
-- ✅ Shows estimated timeline to romance Abigail
-
----
-
-## Test 4: Farm Plan Action (Multi-Turn - 2 Parameters)
-
-**Purpose:** Test another multi-turn action with fewer parameters
-
-### Turn 1: Start Farm Plan
-1. **Fresh conversation** - Go to http://localhost:8000
-2. **Type:** `Help me create a farm plan`
-3. **Hit Send**
-
-**Expected:**
-- ✅ System recognizes farm action
-- ✅ Question appears: **"How many crop plots do you have available?"**
-- ✅ Shows examples (5-10 small, 15-25 medium, 50+ large)
-- ✅ **"Action in progress"** indicator shows
-
-### Turn 2: Provide Plot Count
-1. **Type:** `20`
-2. **Hit Send**
-
-**Expected:**
-- ✅ Success: "✅ 20 plots noted..."
-- ✅ Next question: **"What's your budget for seeds for 20 plots?"**
-- ✅ Shows budget tier examples (1000g/5000g/10000g+)
-- ✅ Still **"Action in progress"**
-
-### Turn 3: Provide Budget (Action Executes)
-1. **Type:** `5000`
-2. **Hit Send**
-
-**Expected:**
-- ✅ Success: "✅ 5000g budget set..."
-- ✅ **"Action in progress"** becomes `false`
-- ✅ Farm plan displays with crop recommendations
-- ✅ Shows profitability calculations
-
----
-
-## Test 5: Save Favorites (Single-Turn Action)
-
-**Purpose:** Test single-turn action (no parameter collection)
-
-### Browser Steps:
-1. **Fresh conversation** - http://localhost:8000
-2. **Type:** `Save my favorite gifts for Abigail and Sebastian`
-3. **Hit Send**
-
-**Expected:**
-- ✅ Action completes immediately
-- ✅ **"Action in progress"** is `false`
-- ✅ Confirmation message: "Favorites saved!"
-- ✅ Shows saved villager data
-
----
-
-## Test 6: Conversation Memory (Session Reuse)
+## Test 2: Conversation Memory (Session Reuse)
 
 **Purpose:** Verify conversation history is tracked within a session
 
@@ -150,21 +55,21 @@ The UI will:
 1. **Fresh conversation** - http://localhost:8000
 2. **Type:** `What crops are best for making money?`
 3. **Hit Send**
-4. **Note the answer** (e.g., "Melons, Starfruit, etc.")
+4. **Note the answer**
 
 ### Turn 2: Follow-up Question
 1. **Type:** `How long does it take to grow?`
 2. **Hit Send**
 
-**Expected:**
+### Expected Response:
 - ✅ System remembers the first question
-- ✅ Answer references the crops mentioned before
-- ✅ **Same session ID** used (visible in UI or browser dev tools)
+- ✅ Answer references crops or growth mechanics
+- ✅ **Same session ID** used
 - ✅ Shows context awareness
 
 ---
 
-## Test 7: Off-Topic Query
+## Test 3: Off-Topic Query
 
 **Purpose:** Verify off-topic rejection still works
 
@@ -173,7 +78,7 @@ The UI will:
 2. **Type:** `What is the weather today?`
 3. **Hit Send**
 
-**Expected:**
+### Expected Response:
 - ✅ Response: "I'm designed to answer questions about Stardew Valley..."
 - ✅ Off-topic rejection message appears
 - ✅ **"Action in progress"** is `false`
@@ -181,23 +86,166 @@ The UI will:
 
 ---
 
-## Test 8: Invalid Action Parameter Handling
+## Test 4: Unknown Intent
 
-**Purpose:** Verify invalid parameters are rejected gracefully with guidance
+**Purpose:** Verify ambiguous queries are handled
+
+### Browser Steps:
+1. **Fresh conversation** - http://localhost:8000
+2. **Type:** `Tell me about Stardew Valley`
+3. **Hit Send**
+
+### Expected Response:
+- ✅ Intent shows as `UNKNOWN`
+- ✅ **"Action in progress"** is `false`
+- ✅ General Stardew information is provided
+- ✅ Sources appear with wiki references
+
+---
+
+## Phase 2: Complete Action Flows
+
+## Test 5: Friendship Plan (Multi-Turn - 3 Parameters)
+
+**Purpose:** Complete a full multi-turn action with parameter collection
+
+### Turn 0: Start the Action
+1. **Fresh conversation** - http://localhost:8000
+2. **Type:** `Can you help me create a friendship plan to marry Haley?`
+3. **Hit Send**
+
+### Expected:
+- ✅ System asks: **"Which villager do you want to romance?"**
+- ✅ Shows list of 11 villagers
+- ✅ **"Action in progress"** is `true`
+
+### Turn 1: Provide Villager
+1. **Type:** `Haley`
+2. **Hit Send**
+
+### Expected:
+- ✅ Success message: "✅ Great! Haley it is!"
+- ✅ Next question: **"What's your current friendship level with Haley?"**
+- ✅ Shows range guide (0/4/8/10 hearts with meanings)
+- ✅ Still shows **"Action in progress"**
+
+### Turn 2: Provide Current Hearts
+1. **Type:** `3`
+2. **Hit Send**
+
+### Expected:
+- ✅ Success message: "✅ 3 hearts with Haley..."
+- ✅ Next question: **"How many gifts can you give Haley per week?"**
+- ✅ Shows frequency options (1/3/5/7 gifts with meanings)
+- ✅ Still shows **"Action in progress"**
+
+### Turn 3: Provide Gifts Per Week (Action Executes)
+1. **Type:** `4`
+2. **Hit Send**
+
+### Expected:
+- ✅ Success message: "✅ Perfect! 4 gifts per week..."
+- ✅ **"Action in progress"** changes to `false`
+- ✅ Action result displays with:
+  - 📊 Current Status (hearts breakdown)
+  - 📅 Timeline to Romance (weeks breakdown)
+  - 💝 Gifting Strategy
+  - 🎯 Pro Tips
+- ✅ **See more details** shows Session ID and Parameters (villager, current_hearts, gifts_per_week)
+
+---
+
+## Test 6: Farm Plan (Multi-Turn - 2 Parameters)
+
+**Purpose:** Test another multi-turn action with fewer parameters
+
+### Turn 0: Start the Action
+1. **Fresh conversation** - http://localhost:8000 (refresh page)
+2. **Type:** `Help me create a farm plan`
+3. **Hit Send**
+
+### Expected:
+- ✅ System recognizes farm action
+- ✅ Question appears: **"How many crop plots do you have available?"**
+- ✅ Shows examples (5-10 small, 15-25 medium, 50+ large)
+- ✅ **"Action in progress"** indicator shows
+
+### Turn 1: Provide Plot Count
+1. **Type:** `15`
+2. **Hit Send**
+
+### Expected:
+- ✅ Success: "✅ 15 plots noted..."
+- ✅ Next question: **"What's your budget for seeds for 15 plots?"**
+- ✅ Shows budget tier examples (1000g/5000g/10000g+)
+- ✅ Still **"Action in progress"**
+
+### Turn 2: Provide Budget (Action Executes)
+1. **Type:** `3000`
+2. **Hit Send**
+
+### Expected:
+- ✅ Success: "✅ 3000g budget set..."
+- ✅ **"Action in progress"** becomes `false`
+- ✅ Farm plan displays with:
+  - 🌾 Farm Setup (plots, budget, ROI)
+  - 🌱 Recommended Crops (with growth times)
+  - 💡 Pro Tips
+- ✅ Shows profitability calculations
+- ✅ **See more details** shows Session ID and Parameters (plot_count, budget)
+
+---
+
+## Test 7: Save Favorites (Single-Turn Action)
+
+**Purpose:** Test single-turn action with auto-completion
+
+### Browser Steps:
+1. **Fresh conversation** - http://localhost:8000
+2. **Type:** `Save my favorite gifts for Abigail and Sebastian`
+3. **Hit Send**
+
+### Expected:
+- ✅ Action completes immediately (no parameter collection needed)
+- ✅ **"Action in progress"** is `false`
+- ✅ Displays:
+  - ✅ **Saved Favorite Gifts for Abigail, Sebastian!**
+  - 💝 **Abigail:** list of 3 favorite gifts
+  - 💝 **Sebastian:** list of 3 favorite gifts
+  - 📝 **Tips:** about friendship points (+80, +160 on birthdays)
+  - 🎯 **Quick Strategy:** for gifting
+- ✅ **See more details** shows Session ID and Parameters (villagers: ["Abigail", "Sebastian"])
+
+---
+
+## Phase 3: Invalid Parameter Handling
+
+## Test 8: Friendship Plan with Invalid Heart Level
+
+**Purpose:** Verify invalid parameters are rejected gracefully
 
 ### Start a Friendship Plan:
 1. **Fresh conversation** - http://localhost:8000
 2. **Type:** `Help me romance Abigail`
 3. **Hit Send**
-4. **Type:** `Abigail`
-5. **Hit Send**
+
+### Expected:
+- ✅ Question appears: **"Which villager do you want to romance?"**
+
+### Provide Valid Villager:
+1. **Type:** `Abigail`
+2. **Hit Send**
+
+### Expected:
+- ✅ Success: "✅ Great! Abigail it is!"
+- ✅ Next question: **"What's your current friendship level with Abigail?"**
 
 ### Provide Invalid Heart Value (>10):
 1. **Type:** `15`
 2. **Hit Send**
 
-**Expected:**
-- ✅ Error message appears: "❌ Invalid heart level: 15"
+### Expected:
+- ✅ Error message: "❌ Invalid heart level: 15"
 - ✅ Shows guidance: "**Hearts must be 0-10**"
 - ✅ Provides examples: "Try: 0, 2, 4, 6, 8, or 10"
 - ✅ **"Action in progress"** stays `true`
@@ -207,113 +255,90 @@ The UI will:
 1. **Type:** `5`
 2. **Hit Send**
 
-**Expected:**
+### Expected:
 - ✅ Success: "✅ 5 hearts with Abigail..."
 - ✅ Continues to next parameter
 
 ---
 
-## Test 9: Invalid Villager Name
+## Test 9: Farm Plan with Invalid Budget
 
-**Purpose:** Verify villager name validation
+**Purpose:** Verify budget validation
 
-### Browser Steps:
+### Start a Farm Plan:
 1. **Fresh conversation** - http://localhost:8000
-2. **Type:** `Create a romance plan`
-3. **Hit Send** (gets action detection)
-4. **Type:** `InvalidName`
-5. **Hit Send**
-
-**Expected:**
-- ✅ Error message: "❌ I don't recognize 'InvalidName'"
-- ✅ Shows list of valid villagers
-- ✅ Suggests choosing from the list
-- ✅ System re-asks for villager name
-
-### Provide Valid Name:
-1. **Type:** `Sebastian`
-2. **Hit Send**
-
-**Expected:**
-- ✅ Success: "✅ Great! Sebastian it is!"
-- ✅ Continues to next parameter
-
----
-
-## Test 10: Unknown Intent
-
-**Purpose:** Verify ambiguous queries are handled
-
-### Browser Steps:
-1. **Fresh conversation** - http://localhost:8000
-2. **Type:** `Tell me about Stardew Valley`
+2. **Type:** `Help me create a farm plan`
 3. **Hit Send**
 
-**Expected:**
-- ✅ Intent shows as `UNKNOWN`
-- ✅ **"Action in progress"** is `false`
-- ✅ General Stardew information is provided
-- ✅ Sources appear with wiki references
+### Expected:
+- ✅ Question appears: **"How many crop plots do you have available?"**
+
+### Provide Valid Plot Count:
+1. **Type:** `20`
+2. **Hit Send**
+
+### Expected:
+- ✅ Success: "✅ 20 plots noted..."
+- ✅ Next question: **"What's your budget for seeds for 20 plots?"**
+
+### Provide Invalid Budget (zero or negative):
+1. **Type:** `0`
+2. **Hit Send**
+
+### Expected:
+- ✅ Error message: "❌ Invalid budget: 0"
+- ✅ Shows guidance: "**Budget must be positive (>0)**"
+- ✅ Provides examples: "Try: 1000, 5000, 10000"
+- ✅ **"Action in progress"** stays `true`
+
+### Provide Valid Budget:
+1. **Type:** `5000`
+2. **Hit Send**
+
+### Expected:
+- ✅ Success: "✅ 5000g budget set..."
+- ✅ Action executes and completes
+- ✅ **"Action in progress"** becomes `false`
 
 ---
 
-## UI Testing Checklist
+## Test 10: Save Favorites with Invalid Names
 
-**Session & Basic:**
-- [ ] Test 1: Fresh query auto-generates session
-- [ ] Test 6: Session memory works (follow-up question understood)
+**Purpose:** Verify name validation and fuzzy matching
 
-**Actions - Multi-Turn:**
-- [ ] Test 2: Friendship plan action detected
-- [ ] Test 3: Full friendship plan (3 turns) completes with result
-- [ ] Test 4: Farm plan action (2 turns) completes with result
-- [ ] Test 5: Save favorites (single-turn) completes immediately
+### Browser Steps:
+1. **Fresh conversation** - http://localhost:8000
+2. **Type:** `Save my favorite gifts for Abigail and InvalidName`
+3. **Hit Send**
 
-**Guided Prompts & Error Handling:**
-- [ ] Test 8: Invalid parameters show helpful error + examples
-- [ ] Test 9: Invalid villager name shows list of valid villagers
-- [ ] Test 2/3/4: Prompts show suggestions (villager list, heart examples, etc.)
+### Expected:
+- ✅ System detects valid villager "Abigail"
+- ✅ Ignores the invalid name "InvalidName" (gracefully skips it)
+- ✅ Saves favorites only for Abigail
+- ✅ Shows Abigail's gift list
+- ✅ No error message (invalid names are silently skipped)
 
-**Safety & Intent Routing:**
-- [ ] Test 7: Off-topic queries rejected appropriately
-- [ ] Test 10: Unknown intents routed to DefaultAgent
+### Alternative: Fuzzy Match Test
+1. **Fresh conversation** - http://localhost:8000
+2. **Type:** `Save my favorite gifts for Hayley and Sebastien`
+3. **Hit Send**
 
----
-
-## What to Look For in the UI
-
-✅ **Guided Prompts Should Show:**
-- Clear question text (bold/emphasized)
-- Bullet point suggestions with examples
-- Range information (0-10, 1-7, etc.)
-- Meaning of values (0 hearts = Just met, etc.)
-
-✅ **Error Messages Should Show:**
-- ❌ What was invalid
-- 📌 What the valid range is
-- 💡 Specific examples to try
-- ↩️ System re-asks for the parameter
-
-✅ **Action Results Should Show:**
-- ✅ Completion confirmation
-- 📋 Plan details (friendship timeline, farm recommendations, etc.)
-- 💾 Save confirmation (if applicable)
-- 🎯 Actionable next steps
-
-✅ **Session Indicators:**
-- Session ID visible (in URL, badge, or message)
-- Same session for all turns in one conversation
-- New session for fresh conversation (new tab/browser)
+### Expected:
+- ✅ Fuzzy matching corrects misspellings:
+  - "Hayley" → "Haley"
+  - "Sebastien" → "Sebastian"
+- ✅ Shows gifts for both corrected villagers
+- ✅ Action completes successfully
 
 ---
 
-## All Tests Passing?
+## Testing Complete! ✅
 
-**✅ Ready to commit!**
+All tests passing? Ready to commit:
 
 ```bash
 cd /Users/lamanamulaffer/Documents/GitHub/Startdew_Valley_RAG
 git add TESTING_GUIDE_UI.md
-git commit -m "Add browser UI testing guide with step-by-step instructions"
+git commit -m "Complete browser UI testing guide - all 10 test scenarios"
 git push origin main
 ```

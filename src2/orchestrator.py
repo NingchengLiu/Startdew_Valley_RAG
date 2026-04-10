@@ -102,12 +102,22 @@ Examples:
                     }
                 ],
                 system=self.ROUTING_PROMPT,
-                max_tokens=200,
+                max_tokens=500,  # Increased to give room for reasoning + answer
                 temperature=0.3,  # Low temp for consistent classification
             )
             
             # Parse JSON response
             response_text = response.answer.strip()
+            
+            if not response_text:
+                print(f"[orchestrator] Empty LLM response, using fallback")
+                return RoutedIntent(
+                    intent_type=IntentType.UNKNOWN,
+                    confidence=0.3,
+                    probabilities={},
+                    original_query=query,
+                )
+            
             # Try to extract JSON if it's wrapped in code blocks
             if "```" in response_text:
                 response_text = response_text.split("```")[1]

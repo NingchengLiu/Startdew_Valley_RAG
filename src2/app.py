@@ -215,10 +215,9 @@ def chat(req: ChatRequest):
     
     # Step 1: Retrieve or create session
     session_id = req.session_id or str(uuid.uuid4())
-    try:
-        session = session_manager.get_session(session_id)
-    except KeyError:
-        session = session_manager.create_session(session_id)
+    session = session_manager.get_session(session_id)
+    if not session:
+        session = session_manager.create_session(user_id=session_id, session_id=session_id)
     
     # Step 2: Check for in-progress action
     action_context = session_manager.get_action_context(session_id)
@@ -244,6 +243,16 @@ def chat(req: ChatRequest):
                 )
                 session_manager.clear_action_context(session_id)
                 
+                # Format action result with session ID and params
+                action_result_details = {
+                    "action_id": result.action_id,
+                    "status": "completed",
+                    "session_id": session_id,
+                    "action_type": action_context.action_type.value,
+                    "parameters": action_context.state if action_context.state else {},
+                    "details": result.metadata
+                }
+                
                 return ChatResponse(
                     answer=result.message,
                     sources=[],
@@ -255,7 +264,7 @@ def chat(req: ChatRequest):
                     session_id=session_id,
                     action_in_progress=False,
                     action_type=None,
-                    action_result={"id": result.id, "status": "completed", "details": result.metadata},
+                    action_result=action_result_details,
                     usage={},
                 )
             else:
@@ -299,26 +308,62 @@ def chat(req: ChatRequest):
     action_context = action_handler.detect_action_intent(req.query)
     
     if action_context:
-        # Action requested; initiate multi-turn flow
-        next_question = action_handler.get_next_question(action_context)
-        session_manager.set_action_context(session_id, action_context)
-        session_manager.add_user_message(session_id, req.query, intent_type=routed.intent_type.value)
-        session_manager.add_assistant_message(session_id, next_question, action_type=action_context.action_type.value)
-        
-        return ChatResponse(
-            answer=next_question,
-            sources=[],
-            retrieved_count=0,
-            agent_type="ActionHandler",
-            intent_type=action_context.action_type.value,
-            intent_confidence=1.0,
-            intent_probabilities={},
-            session_id=session_id,
-            action_in_progress=True,
-            action_type=action_context.action_type.value,
-            action_question=next_question,
-            usage={},
-        )
+        # Action requested; check if already complete (e.g., SAVE_FAVORITES with villagers extracted from query)
+        if action_context.is_complete():
+            # Execute action immediately
+            result = action_handler.execute_action(action_context)
+            session_manager.add_user_message(session_id, req.query, intent_type=routed.intent_type.value)
+            session_manager.add_assistant_message(
+                session_id,
+                result.message,
+                action_type=action_context.action_type.value
+            )
+            
+            # Format action result with session ID and params
+            action_result_details = {
+                "action_id": result.action_id,
+                "status": "completed",
+                "session_id": session_id,
+                "action_type": action_context.action_type.value,
+                "parameters": action_context.state if action_context.state else {},
+                "details": result.metadata
+            }
+            
+            return ChatResponse(
+                answer=result.message,
+                sources=[],
+                retrieved_count=0,
+                agent_type="ActionHandler",
+                intent_type=action_context.action_type.value,
+                intent_confidence=1.0,
+                intent_probabilities={},
+                session_id=session_id,
+                action_in_progress=False,
+                action_type=None,
+                action_result=action_result_details,
+                usage={},
+            )
+        else:
+            # Initiate multi-turn flow for incomplete actions
+            next_question = action_handler.get_next_question(action_context)
+            session_manager.set_action_context(session_id, action_context)
+            session_manager.add_user_message(session_id, req.query, intent_type=routed.intent_type.value)
+            session_manager.add_assistant_message(session_id, next_question, action_type=action_context.action_type.value)
+            
+            return ChatResponse(
+                answer=next_question,
+                sources=[],
+                retrieved_count=0,
+                agent_type="ActionHandler",
+                intent_type=action_context.action_type.value,
+                intent_confidence=1.0,
+                intent_probabilities={},
+                session_id=session_id,
+                action_in_progress=True,
+                action_type=action_context.action_type.value,
+                action_question=next_question,
+                usage={},
+            )
     
     # Step 5: Check if off-topic
     if routed.intent_type == IntentType.OFF_TOPIC:

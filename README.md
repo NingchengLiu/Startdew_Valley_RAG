@@ -1,60 +1,126 @@
-﻿# Stardew Valley RAG
+﻿# Stardew Valley RAG Conversational Agent
 
-A Retrieval-Augmented Generation (RAG) chatbot that answers Stardew Valley questions using grounded information from the public Stardew Valley Wiki.
+A multi-agent Retrieval-Augmented Generation (RAG) chatbot that answers Stardew Valley questions using grounded information from the public Stardew Valley Wiki, with support for multi-turn dialogues, intelligent parameter collection, and action execution.
 
-## Project Purpose
+## Project Overview
 
-Build a conversational RAG system grounded in the Stardew Valley Wiki, capable of answering player questions about farming, quests, villagers, fishing, mining, and more.
+This project builds a conversational AI system for Stardew Valley that goes beyond simple question-answering. It combines:
 
-## RAG System Overview
+- **Knowledge Retrieval**: Semantic search over 8,674 wiki chunks using FAISS vector store
+- **Intent Classification**: LLM-based routing to 5 intent categories (CROPS, ITEMS, FRIENDSHIP, UNKNOWN, OFF_TOPIC)
+- **Multi-Agent Architecture**: Specialized agents for farming, items, and relationships
+- **Multi-Turn Dialogue**: Persistent session management across conversation turns
+- **Action Execution**: Generate friendship plans, farm plans, and save favorite villagers with fuzzy name matching
+- **Guardrails**: Off-topic detection and graceful error handling
 
-**End-to-End Pipeline:**
+Perfect for Stardew Valley players who want instant, wiki-grounded answers and strategic planning help.
+
+## System Overview
+
+The RAG system combines data preparation, semantic retrieval, intent routing, and action execution:
+
 ```
+╔═══════════════════════════════════════════════════════════════════╗
+║                    DATA PREPARATION PIPELINE                     ║
+╚═══════════════════════════════════════════════════════════════════╝
+
 Wiki Data (JSONL)
-    │
-    ├─→ chunker.py
-    │   ├─ Load JSONL documents
-    │   └─ Split into 512-char sections with 64-char overlap
-    │
-    ├─→ build_index.py
-    │   ├─ embeddings.py → A2 endpoint (BAAI/bge-base-en-v1.5)
-    │   │   ├─ Embed all 8,674 chunks
-    │   │   └─ Save vectors to FAISS
-    │   │
-    │   └─ Save FAISS index to disk (index/section_recursive/)
-    │
-    └─→ Runtime Pipeline:
-        │
-        User Query
-            │
-            ├─→ orchestrator.py (LLM intent routing)
-            │   ├─ Classify: CROPS | ITEMS | FRIENDSHIP | UNKNOWN | OFF_TOPIC
-            │   └─ Route to appropriate agent
-            │
-            ├─→ Agent Selection
-            │   ├─ CropPlanner
-            │   ├─ ItemFinder
-            │   ├─ FriendshipFinder
-            │   └─ DefaultAgent
-            │
-            ├─→ retriever.py (FAISS semantic search)
-            │   ├─ Embed query using same embeddings
-            │   └─ Find top-k similar chunks from index
-            │
-            ├─→ llm.py (Qwen3-30B generation)
-            │   ├─ Augment query with retrieved context
-            │   └─ Generate grounded answer
-            │
-            └─→ app.py (FastAPI)
-                └─ Return: answer + sources + intent + confidence
+    ↓
+chunker.py
+    ├─ Load JSONL documents
+    └─ Split into 512-char sections (64-char overlap)
+    
+    ↓
+    
+embeddings.py
+    ├─ BAAI/bge-base-en-v1.5 embeddings
+    └─ Embed all 8,674 chunks via A2 endpoint
+    
+    ↓
+    
+build_index.py
+    ├─ Build FAISS vector index
+    └─ Save index to disk (index/section_recursive/)
+
+╔═══════════════════════════════════════════════════════════════════╗
+║              RUNTIME MULTI-AGENT RAG PIPELINE                    ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+Session Management (localStorage + Backend)
+    ↓
+User Query
+    ↓
+Orchestrator (orchestrator.py)
+    ├─ LLM intent classification
+    └─ Route to: CROPS | ITEMS | FRIENDSHIP | UNKNOWN | OFF_TOPIC
+    
+    ↓ ↓ ↓ ↓ ↓
+    
+    ┌─────────────────────────────────────────────────────────────┐
+    │              KNOWLEDGE AGENTS (parallel)                    │
+    ├─────────────────────────────────────────────────────────────┤
+    │                                                              │
+    │  CropPlanner      ItemFinder      FriendshipFinder      DefaultAgent
+    │     Agent            Agent            Agent                Agent
+    │       │                │                │                   │
+    │       └────────────────┴────────────────┴───────────────────┘
+    │                        │
+    │             retriever.py (FAISS)
+    │             • Embed query
+    │             • Semantic search
+    │             • Retrieve top-k wiki chunks
+    │                        │
+    │             llm.py (Qwen3-30B)
+    │             • Augment with context
+    │             • Generate grounded answer
+    │                        │
+    │        Output: Answer + Sources + Intent + Confidence
+    │                                                              │
+    └─────────────────────────────────────────────────────────────┘
+    
+    OR (if action detected)
+    
+    ┌─────────────────────────────────────────────────────────────┐
+    │         ACTION HANDLER (actions.py - separate flow)         │
+    ├─────────────────────────────────────────────────────────────┤
+    │                                                              │
+    │  Multi-turn Parameter Collection:                           │
+    │  • CREATE_FRIENDSHIP_PLAN (villager, hearts, gifts/week)   │
+    │  • CREATE_FARM_PLAN (plot_count, budget)                   │
+    │  • SAVE_FAVORITES (auto-extract + fuzzy match)             │
+    │                                                              │
+    │  Validation → Parameter Refinement → Execution             │
+    │  Output: Detailed action result with strategy & tips       │
+    │                                                              │
+    └─────────────────────────────────────────────────────────────┘
+
+Multi-Turn Conversation Flow:
+    • Full history maintained per session
+    • Action parameter collection across turns
+    • Re-ask on validation failure with guidance
+    • Execute and return result
 ```
 
-**Key Technologies:**
-- **Embeddings**: BAAI/bge-base-en-v1.5 (A2 endpoint)
-- **Vector Store**: FAISS (8,674 chunks)
-- **LLM**: Qwen3-30B (final project endpoint)
-- **Framework**: FastAPI + LangChain
-- **Intent Routing**: LLM-based classification
+**Key Capabilities:**
+- ✅ Semantic knowledge retrieval with FAISS indexing
+- ✅ Intent classification with 5 routing categories
+- ✅ Multi-turn dialogue with session persistence
+- ✅ Specialized knowledge agents (crops, items, friendship, general)
+- ✅ Dedicated action handler for strategic planning
+- ✅ Parameter validation with fuzzy name matching
+- ✅ Off-topic detection and guardrails
+- ✅ Graceful error handling with helpful guidance
+
+## Key Technologies
+
+| Component | Technology | Details |
+|-----------|-----------|---------|
+| **Embeddings** | BAAI/bge-base-en-v1.5 | Semantic similarity scoring |
+| **Vector Store** | FAISS | 8,674 indexed wiki chunks |
+| **LLM** | Qwen3-30B | OpenAI-compatible endpoint |
+| **Framework** | FastAPI + LangChain | REST API + RAG pipeline |
+| **Frontend** | HTML5 + Vanilla JS | Session management (localStorage) |
+| **Session Mgmt** | In-memory + localStorage | 30-min timeout per session |
 
 ## Repository Structure
 
@@ -62,7 +128,8 @@ Wiki Data (JSONL)
 Stardew_Valley_RAG/
 ├── README.md                       # Project overview (this file)
 ├── SETUP.md                        # Installation & running instructions
-├── ARCHITECTURE.png                # Visual system diagram
+├── TESTING_GUIDE_UI.md             # 10-test verification suite
+├── ARCHITECTURE.png                # Visual system diagram (WIP)
 ├── .env                            # Configuration (not committed)
 ├── requirements.txt                # Python dependencies
 │
@@ -72,20 +139,20 @@ Stardew_Valley_RAG/
 │   └── processed/
 │       └── stardew_wiki_sections.jsonl   # 8,674 clean wiki chunks (RAG input)
 │
-├── src2/                           # Main RAG implementation
-│   ├── app.py                      # FastAPI server + web UI
+├── src2/                           # Main RAG + Action implementation
+│   ├── app.py                      # FastAPI server + web UI + multi-turn dialogue
 │   ├── orchestrator.py             # LLM-based intent routing
-│   ├── agents.py                   # 4 domain-specific agents
+│   ├── actions.py                  # 3 action handlers (friendship plan, farm plan, save favorites)
 │   ├── retriever.py                # FAISS vector search
 │   ├── llm.py                      # Qwen3 LLM client
-│   ├── embeddings.py               # Embedding service (A2 endpoint)
+│   ├── session_manager.py          # Session persistence
 │   ├── chunker.py                  # Document chunking
 │   ├── build_index.py              # Build FAISS index
-│   ├── index.html                  # Stardew Valley themed UI
+│   ├── index.html                  # Stardew Valley themed UI (session-based)
 │   ├── index/                      # FAISS index (generated, not committed)
 │   └── tests/                      # 200+ unit & integration tests
 │
-├── src/                            # Original scaffold (legacy)
+├── src/                            # Original implementation (legacy)
 ├── docs/                           # Documentation
 ├── notebooks/                      # Exploration notebooks
 └── tests/                          # Top-level tests
@@ -104,51 +171,6 @@ Filters applied to processed data:
 - Removed `Modding:` and `Module:` wiki pages
 - Removed binary/corrupted records
 
-## Chatbot Architecture
-
-See [ARCHITECTURE.png](ARCHITECTURE.png) for visual system diagram.
-
-The system uses a **multi-agent architecture** where queries are routed to specialized agents based on intent classification:
-
-### Key Components
-
-**1. Orchestrator** (`src2/orchestrator.py`)
-- LLM-based intent classification
-- Returns: Intent type, confidence score, probabilities for all 5 categories
-- Handles ambiguous queries transparently
-
-**2. Agents** (`src2/agents.py`)
-- **CropPlanner**: Farming, crops, seasons, profitability
-- **ItemFinder**: Items, tools, resources, crafting
-- **FriendshipFinder**: Villagers, romance, gifts, marriage
-- **DefaultAgent**: General Stardew Valley knowledge
-- Each retrieves wiki chunks → Augments with context → Generates answer
-
-**3. Retriever** (`src2/retriever.py`)
-- FAISS vector store with 8,674 wiki chunks
-- Semantic search using sentence-transformers embeddings
-- Returns most similar chunks with relevance scores
-
-**4. LLM Client** (`src2/llm.py`)
-- OpenAI-compatible wrapper for Qwen3-30B
-- Handles retries, timeouts, errors
-- Configurable temperature
-
-**5. FastAPI Server** (`src2/app.py`)
-- `/` — Web chat UI
-- `/chat` — Multi-agent RAG endpoint
-- `/health` — System status
-
-### Intent Categories
-
-| Intent | Agent | Example |
-|--------|-------|---------|
-| CROPS | CropPlanner | "What crops should I plant in spring?" |
-| ITEMS | ItemFinder | "Where can I find copper ore?" |
-| FRIENDSHIP | FriendshipFinder | "How do I marry Abigail?" |
-| UNKNOWN | DefaultAgent | "Tell me about Stardew Valley" |
-| OFF_TOPIC | Rejected | "What's the weather today?" |
-
 ## Chunking Strategy
 
 Default: `section_recursive` — `RecursiveCharacterTextSplitter` with `chunk_size=512`, `chunk_overlap=64`.
@@ -163,6 +185,30 @@ The original text is stored separately in metadata for clean citation display.
 
 Model: `qwen3-30b-a3b-fp8` with reasoning enabled via the course-provided endpoint.
 Client uses the OpenAI-compatible API (`openai` Python package).
+
+## Testing
+
+See [TESTING_GUIDE_UI.md](TESTING_GUIDE_UI.md) for comprehensive 10-test verification suite.
+
+### Requirement 2: Agent Capabilities ✅
+
+| Capability | Status | Details |
+|-----------|--------|---------|
+| **Intent Classification** | ✅ | 5 intent types with LLM routing + confidence scoring |
+| **Knowledge QA** | ✅ | RAG pipeline with source attribution (title, heading, URL, score) |
+| **3+ Actions** | ✅ | Friendship plan, farm plan, save favorites (with fuzzy matching) |
+| **Multi-Turn Dialogue** | ✅ | Parameter collection across turns with validation |
+| **Conversation Memory** | ✅ | Full history per session (localStorage + backend) |
+| **Guardrails** | ✅ | Off-topic detection, parameter validation, error handling |
+
+### Requirement 3: Agent Evaluation ✅
+
+**10 Comprehensive Tests:**
+- **Phase 1** (Knowledge & Safety): Basic query, memory, off-topic, unknown intent
+- **Phase 2** (Action Flows): Friendship plan (3 params), farm plan (2 params), save favorites (auto-complete)
+- **Phase 3** (Error Handling): Invalid hearts, invalid budget, invalid/misspelled names
+
+**Expected Pass Rate:** 100% (all edge cases handled gracefully)
 
 ## Setup & Installation
 
