@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stardew Valley RAG Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: 
+                linear-gradient(to right, 
+                    rgba(100, 180, 120, 0.1) 0%,
+                    rgba(220, 180, 90, 0.1) 50%,
+                    rgba(100, 180, 120, 0.1) 100%),
+                linear-gradient(135deg, #90C590 0%, #7DB885 30%, #D4B896 50%, #90C590 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Decorative background elements */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(139, 195, 74, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(165, 140, 95, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body > .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: linear-gradient(180deg, #faf6f0 0%, #f5f0e8 100%);
+            border-radius: 12px;
+            box-shadow: 
+                0 8px 32px rgba(45, 90, 61, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+            border: 3px solid #9B8B7E;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3D6B4F 0%, #2A5A3D 100%);
+            color: #E8D5C4;
+            padding: 20px;
+            border-bottom: 3px solid #D4A574;
+            text-align: center;
+            position: relative;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .header::before {
+            content: '🌾';
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            opacity: 0.7;
+        }
+
+        .header::after {
+            content: '🐔';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            opacity: 0.7;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: linear-gradient(to bottom, #fdfbf7 0%, #f9f5ef 100%);
+            position: relative;
+        }
+
+        /* Subtle pattern overlay */
+        .chat-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(212, 165, 116, 0.02) 2px,
+                    rgba(212, 165, 116, 0.02) 4px
+                );
+            pointer-events: none;
+        }
+
+        .chat-area > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            word-wrap: break-word;
+        }
+
+        .user .message-content {
+            background: linear-gradient(135deg, #3D6B4F 0%, #2A5A3D 100%);
+            color: #E8D5C4;
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 2px 6px rgba(45, 90, 61, 0.2);
+        }
+
+        .bot .message-content {
+            background: linear-gradient(135deg, #EBE0D0 0%, #E0D5C5 100%);
+            color: #2A5A3D;
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 2px 6px rgba(100, 100, 100, 0.1);
+        }
+
+        .bot-info {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .intent-badge {
+            background: linear-gradient(135deg, #D4A574 0%, #C49060 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .confidence {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .confidence-bar {
+            width: 50px;
+            height: 6px;
+            background: #E0D5C5;
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid #D4A574;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8BC34A 0%, #7DB885 100%);
+            border-radius: 3px;
+        }
+
+        .source {
+            font-size: 10px;
+            color: #666;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #E0D5C5;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-weight: 500;
+        }
+
+        .source-link {
+            color: #3D6B4F;
+            text-decoration: none;
+            border-bottom: 1px dotted #3D6B4F;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .source-link:hover {
+            text-decoration: underline;
+            color: #2A5A3D;
+        }
+
+        .input-area {
+            padding: 16px;
+            border-top: 2px solid #D4A574;
+            background: linear-gradient(to bottom, #faf6f0 0%, #f5f0e8 100%);
+            display: flex;
+            gap: 8px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 14px;
+            border: 2px solid #D4A574;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            background: white;
+            color: #2A5A3D;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-field::placeholder {
+            color: #A0A0A0;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #3D6B4F;
+            box-shadow: 
+                inset 0 1px 3px rgba(0, 0, 0, 0.05),
+                0 0 8px rgba(61, 107, 79, 0.3);
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #3D6B4F 0%, #2A5A3D 100%);
+            color: #E8D5C4;
+            border: 2px solid #2A5A3D;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            box-shadow: 0 2px 6px rgba(45, 90, 61, 0.2);
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(45, 90, 61, 0.35);
+            background: linear-gradient(135deg, #4D7B5F 0%, #3A6A4D 100%);
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(45, 90, 61, 0.2);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .loading span {
+            width: 8px;
+            height: 8px;
+            background: #3D6B4F;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite;
+        }
+
+        .loading span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scaleY(1);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scaleY(1.2);
+                opacity: 1;
+            }
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+            color: #B71C1C;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #C62828;
+            margin-bottom: 10px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(198, 40, 40, 0.15);
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #999;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #2A5A3D;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌾 Stardew Valley Chatbot</h1>
+            <p>Ask about crops, items, villagers, and more!</p>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <p>Welcome to the Stardew Valley RAG Chatbot!</p>
+                <p style="font-size: 12px; color: #bbb;">Ask a question to get started...</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input 
+                type="text" 
+                class="input-field" 
+                id="inputField" 
+                placeholder="Ask about crops, items, villagers..."
+                autocomplete="off"
+            >
+            <button class="send-button" id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatArea = document.getElementById('chatArea');
+        const inputField = document.getElementById('inputField');
+        const sendButton = document.getElementById('sendButton');
+
+        // Clear empty state on first message
+        function clearEmptyState() {
+            if (chatArea.querySelector('.empty-state')) {
+                chatArea.innerHTML = '';
+            }
+        }
+
+        // Add message to chat
+        function addMessage(content, isUser, metadata = null) {
+            clearEmptyState();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+
+            messageDiv.appendChild(contentDiv);
+
+            if (!isUser && metadata) {
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'bot-info';
+
+                // Intent badge
+                if (metadata.intent_type) {
+                    const intentBadge = document.createElement('span');
+                    intentBadge.className = 'intent-badge';
+                    intentBadge.textContent = metadata.intent_type.toUpperCase();
+                    infoDiv.appendChild(intentBadge);
+                }
+
+                // Confidence
+                if (metadata.intent_confidence !== undefined) {
+                    const confDiv = document.createElement('div');
+                    confDiv.className = 'confidence';
+                    const fillWidth = Math.round(metadata.intent_confidence * 100);
+                    confDiv.innerHTML = `
+                        <span>${Math.round(metadata.intent_confidence * 100)}%</span>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: ${fillWidth}%"></div>
+                        </div>
+                    `;
+                    infoDiv.appendChild(confDiv);
+                }
+
+                messageDiv.appendChild(infoDiv);
+
+                // Sources
+                if (metadata.sources && metadata.sources.length > 0) {
+                    const sourceDiv = document.createElement('div');
+                    sourceDiv.className = 'source';
+                    sourceDiv.innerHTML = '<strong>Sources:</strong> ';
+                    metadata.sources.forEach((source, idx) => {
+                        const link = document.createElement('a');
+                        link.href = source.url;
+                        link.target = '_blank';
+                        link.className = 'source-link';
+                        link.textContent = source.page_title;
+                        sourceDiv.appendChild(link);
+                        if (idx < metadata.sources.length - 1) {
+                            sourceDiv.appendChild(document.createTextNode(', '));
+                        }
+                    });
+                    messageDiv.appendChild(sourceDiv);
+                }
+            }
+
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // Send message to API
+        async function sendMessage() {
+            const query = inputField.value.trim();
+            if (!query) return;
+
+            // Clear input and disable button
+            inputField.value = '';
+            sendButton.disabled = true;
+
+            // Add user message
+            addMessage(query, true);
+
+            // Add loading indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot';
+            loadingDiv.innerHTML = '<div class="loading"><span></span><span></span><span></span></div>';
+            chatArea.appendChild(loadingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        top_k: 3,
+                        include_reasoning: false,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Remove loading indicator
+                loadingDiv.remove();
+
+                // Add bot response
+                addMessage(data.answer, false, {
+                    intent_type: data.intent_type,
+                    intent_confidence: data.intent_confidence,
+                    sources: data.sources,
+                });
+            } catch (error) {
+                // Remove loading indicator
+                loadingDiv.remove();
+
+                // Show error
+                clearEmptyState();
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = `Error: ${error.message}. Make sure the API is running at localhost:8000`;
+                chatArea.appendChild(errorDiv);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            } finally {
+                sendButton.disabled = false;
+                inputField.focus();
+            }
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        inputField.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Focus input on load
+        inputField.focus();
+    </script>
+</body>
+</html>

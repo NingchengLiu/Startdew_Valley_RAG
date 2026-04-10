@@ -37,10 +37,14 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from retriever import Retriever, RetrievedChunk
 from llm import LLMClient, LLMResponse, get_llm_client
+from orchestrator import route_intent, IntentType
+from agents import get_agent, AgentResponse
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 
@@ -49,19 +53,6 @@ INDEX_DIR  = Path(os.getenv("INDEX_DIR",  f"index/{_strategy}"))
 
 DEFAULT_TOP_K     = 3
 MAX_HISTORY_TURNS = 6
-
-SYSTEM_PROMPT = """\
-You are a knowledgeable and friendly guide for the farming simulation game Stardew Valley.
-Answer the player's question using ONLY the wiki context provided in the <wiki_context> block.
-
-Rules:
-- Be concise and helpful. Use bullet points for multi-step instructions or item lists.
-- Always cite the wiki page by name (e.g. "According to the Fishing page...").
-- If the context doesn't fully answer the question, say so — do not invent facts.
-- If the question is ambiguous, ask one brief clarifying question.
-- Never discuss topics unrelated to Stardew Valley.
-- Think carefully through the context before answering to ensure accuracy.
-"""
 
 # ── App setup ──────────────────────────────────────────────────────────────────
 
@@ -90,6 +81,14 @@ def get_llm() -> LLMClient:
     return _llm
 
 
+# ── Root endpoint (serve UI) ───────────────────────────────────────────────────
+
+@app.get("/")
+def serve_ui():
+    """Serve the chat UI."""
+    return FileResponse(Path(__file__).parent / "index.html")
+
+
 # ── Schemas ────────────────────────────────────────────────────────────────────
 
 class Message(BaseModel):
@@ -114,12 +113,20 @@ class SourceRef(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    answer:          str
-    sources:         list[SourceRef]
-    retrieved_count: int
-    reasoning:       Optional[str] = Field(None,
+    answer:              str
+    sources:             list[SourceRef]
+    retrieved_count:     int
+    agent_type:          str          = Field(default="DefaultAgent",
+        description="Which agent handled this query (ItemFinder, FriendshipFinder, CropPlanner, DefaultAgent, OffTopicFilter)")
+    intent_type:         str          = Field(default="unknown",
+        description="Intent classification (items, friendship, crops, unknown, off_topic)")
+    intent_confidence:   float        = Field(default=0.0,
+        description="Confidence score for intent classification (0.0 to 1.0)")
+    intent_probabilities: dict        = Field(default_factory=dict,
+        description="Probability distribution across all intent types")
+    reasoning:           Optional[str] = Field(None,
         description="Qwen3 chain-of-thought (only when include_reasoning=true)")
-    usage:           dict          = Field(default_factory=dict)
+    usage:               dict          = Field(default_factory=dict)
 
 
 class RetrieveRequest(BaseModel):
@@ -173,60 +180,57 @@ def retrieve(req: RetrieveRequest):
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     """
-    Full RAG pipeline:
-      1. Retrieve relevant wiki chunks from LangChain FAISS index
-      2. Format as context
-      3. Call qwen3-30b-a3b-fp8 with reasoning + conversation history
-      4. Return answer + source citations + optional chain-of-thought
+    Multi-agent RAG pipeline:
+      1. Route user query to appropriate agent (items, friendship, crops, or default)
+      2. Check if question is off-topic (not about Stardew)
+      3. Retrieve relevant wiki context
+      4. Use specialized agent prompt to generate answer
+      5. Return answer + sources + agent type + optional chain-of-thought
     """
     retriever = get_retriever()
-    llm       = get_llm()
-
-    # Step 1 — Retrieve
-    chunks: list[RetrievedChunk] = retriever.retrieve_with_threshold(
-        req.query, top_k=req.top_k, min_score=req.min_score
-    )
-    if not chunks:
+    llm = get_llm()
+    
+    # Step 1: Route intent
+    routed = route_intent(req.query)
+    
+    # Step 2: Check if off-topic
+    if routed.intent_type == IntentType.OFF_TOPIC:
         return ChatResponse(
-            answer="I couldn't find anything in the Stardew Valley Wiki relevant to your question. Could you rephrase, or ask something about the game?",
+            answer="I'm designed to answer questions about Stardew Valley. Your question doesn't seem to be related to the game. Could you ask about farming, villagers, items, or other Stardew Valley topics?",
             sources=[],
             retrieved_count=0,
+            agent_type="OffTopicFilter",
+            intent_type="off_topic",
+            intent_confidence=round(routed.confidence, 2),
+            intent_probabilities=routed.probabilities or {},
             usage={},
         )
-
-    # Step 2 — Format context
-    context_blocks = "\n\n".join(c.as_context_block() for c in chunks)
-    user_message   = (
-        f"<wiki_context>\n{context_blocks}\n</wiki_context>\n\n"
-        f"Player question: {req.query}"
+    
+    # Step 3: Get appropriate agent
+    agent_name = (
+        routed.intent_type.value 
+        if routed.intent_type != IntentType.UNKNOWN 
+        else "default"
     )
-
-    # Step 3 — Build message list (cap history)
-    history  = req.conversation_history[-(MAX_HISTORY_TURNS * 2):]
-    messages = [
-        *[{"role": m.role, "content": m.content} for m in history],
-        {"role": "user", "content": user_message},
-    ]
-
-    # Step 4 — Call Qwen3
-    try:
-        llm_resp: LLMResponse = llm.complete(messages=messages, system=SYSTEM_PROMPT)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"LLM endpoint error: {e}")
-
-    # Step 5 — Return
+    agent = get_agent(agent_name, retriever, llm)
+    
+    # Step 4: Get agent response
+    agent_resp: AgentResponse = agent.answer(
+        req.query,
+        top_k=req.top_k,
+        min_score=req.min_score,
+        include_reasoning=req.include_reasoning,
+    )
+    
+    # Step 5: Return
     return ChatResponse(
-        answer=llm_resp.answer,
-        sources=[
-            SourceRef(page_title=c.page_title, heading=c.heading,
-                      url=c.url, score=round(c.score, 4))
-            for c in chunks
-        ],
-        retrieved_count=len(chunks),
-        reasoning=llm_resp.reasoning if req.include_reasoning else None,
-        usage={
-            "input_tokens":  llm_resp.input_tokens,
-            "output_tokens": llm_resp.output_tokens,
-            "total_tokens":  llm_resp.total_tokens,
-        },
+        answer=agent_resp.answer,
+        sources=agent_resp.sources or [],
+        retrieved_count=len(agent_resp.sources or []),
+        agent_type=agent_resp.agent_type,
+        intent_type=routed.intent_type.value,
+        intent_confidence=round(routed.confidence, 2),
+        intent_probabilities=routed.probabilities or {},
+        reasoning=agent_resp.reasoning,
+        usage=agent_resp.tokens_used or {},
     )
