@@ -58,56 +58,90 @@ class ActionHandler:
     
     # ── Action Detection ───────────────────────────────────────────────────────
     
-    def detect_action_intent(self, user_message: str, context: Optional[ActionContext] = None) -> Optional[ActionType]:
+    def detect_action_intent(self, user_message: str, context: Optional[ActionContext] = None) -> Optional[ActionContext]:
         """
         Detect if user is requesting an action.
         
-        Returns: ActionType if action detected, None otherwise
+        Returns: ActionContext if action detected, None otherwise
         """
         msg_lower = user_message.lower()
+        action_type = None
         
         # Detect friendship plan request
         if any(phrase in msg_lower for phrase in [
             "friendship plan", "romance plan", "marry", "woo", "court",
             "plan to marry", "want to marry", "help me romance"
         ]):
-            return ActionType.CREATE_FRIENDSHIP_PLAN
+            action_type = ActionType.CREATE_FRIENDSHIP_PLAN
         
         # Detect farm plan request
-        if any(phrase in msg_lower for phrase in [
+        elif any(phrase in msg_lower for phrase in [
             "farm plan", "crop plan", "plan my farm", "plan my crops",
             "optimize my farm", "farm layout"
         ]):
-            return ActionType.CREATE_FARM_PLAN
+            action_type = ActionType.CREATE_FARM_PLAN
         
         # Detect save favorites request
-        if any(phrase in msg_lower for phrase in [
+        elif any(phrase in msg_lower for phrase in [
             "save", "bookmark", "remember", "store", "favorites"
         ]) and any(name in user_message for name in [
             "Abigail", "Sebastian", "Haley", "Elliott", "Leah", 
             "Penny", "Emily", "Maru", "Alex", "Shane", "Harvey"
         ]):
-            return ActionType.SAVE_FAVORITES
+            action_type = ActionType.SAVE_FAVORITES
         
+        if action_type:
+            return ActionContext(action_type=action_type, state={}, current_step=0)
         return None
     
     # ── Multi-turn Collection ──────────────────────────────────────────────────
     
     def get_next_question(self, action_context: ActionContext) -> str:
-        """Get the next question to ask the user based on action progress."""
+        """Get the next question to ask the user based on action progress with suggestions."""
         if action_context.action_type == ActionType.CREATE_FRIENDSHIP_PLAN:
             if "villager" not in action_context.state:
-                return "Which villager do you want to romance?"
+                return (
+                    "**Which villager do you want to romance?**\n\n"
+                    "Choose from: Abigail, Sebastian, Haley, Elliott, Leah, Penny, Emily, Maru, Alex, Shane, or Harvey"
+                )
             elif "current_hearts" not in action_context.state:
-                return "What's your current heart level with them? (0-10)"
+                villager = action_context.state.get("villager", "them")
+                return (
+                    f"**What's your current friendship level with {villager}?** (Enter a number)\n\n"
+                    "Range: 0-10 hearts\n"
+                    "• 0 hearts = Just met\n"
+                    "• 4 hearts = Like them\n"
+                    "• 8 hearts = Love them\n"
+                    "• 10 hearts = Max friendship (can marry!)"
+                )
             elif "gifts_per_week" not in action_context.state:
-                return "How many gifts can you give per week?"
+                villager = action_context.state.get("villager", "them")
+                return (
+                    f"**How many gifts can you give {villager} per week?** (Enter a number)\n\n"
+                    "Range: 0-7 gifts (one per day max)\n"
+                    "• 1 gift/week = Casual\n"
+                    "• 3 gifts/week = Committed\n"
+                    "• 7 gifts/week = Maximum effort"
+                )
         
         elif action_context.action_type == ActionType.CREATE_FARM_PLAN:
             if "plot_count" not in action_context.state:
-                return "How many crop plots do you have?"
+                return (
+                    "**How many crop plots do you have available?** (Enter a number)\n\n"
+                    "Range: 1-100 plots\n"
+                    "• Small farm: 5-10 plots\n"
+                    "• Medium farm: 15-25 plots\n"
+                    "• Large farm: 50+ plots"
+                )
             elif "budget" not in action_context.state:
-                return "What's your budget for seeds (in gold)?"
+                plots = action_context.state.get("plot_count", 0)
+                return (
+                    f"**What's your budget for seeds for {plots} plots?** (Enter in gold)\n\n"
+                    "Examples:\n"
+                    "• 1,000g = Budget planting\n"
+                    "• 5,000g = Standard investment\n"
+                    "• 10,000g+ = Premium crops"
+                )
         
         return "Ready to create your plan!"
     
@@ -130,9 +164,10 @@ class ActionHandler:
                 villager_lower = user_input.strip().lower()
                 if villager_lower in valid_villagers:
                     action_context.state["villager"] = user_input.strip()
-                    return True, f"Got it! {user_input.strip()} is a great choice."
+                    return True, f"✅ Great! {user_input.strip()} it is!\n\nNext, tell me your current friendship level with them."
                 else:
-                    return False, f"I don't recognize '{user_input}'. Please choose a valid villager."
+                    valid_list = "Abigail, Sebastian, Haley, Elliott, Leah, Penny, Emily, Maru, Alex, Shane, Harvey"
+                    return False, f"❌ I don't recognize '{user_input}'.\n\n**Valid villagers:** {valid_list}\n\nPlease choose one from the list above."
             
             # Collect current hearts
             elif "current_hearts" not in action_context.state:
@@ -140,11 +175,12 @@ class ActionHandler:
                     hearts = int(user_input.strip())
                     if 0 <= hearts <= 10:
                         action_context.state["current_hearts"] = hearts
-                        return True, f"Starting from {hearts} hearts. How many gifts can you give per week?"
+                        villager = action_context.state.get("villager", "them")
+                        return True, f"✅ {hearts} hearts with {villager}. Now, how many gifts per week can you manage?"
                     else:
-                        return False, "Hearts must be between 0-10."
+                        return False, f"❌ Invalid heart level: {hearts}\n\n**Hearts must be 0-10** (you entered {hearts}).\n\nTry: 0, 2, 4, 6, 8, or 10"
                 except ValueError:
-                    return False, "Please enter a number between 0-10."
+                    return False, f"❌ '{user_input}' is not a number.\n\n**Please enter a number between 0-10**\n\nExample: 5"
             
             # Collect gifts per week
             elif "gifts_per_week" not in action_context.state:
@@ -152,11 +188,11 @@ class ActionHandler:
                     gifts = int(user_input.strip())
                     if 0 <= gifts <= 7:
                         action_context.state["gifts_per_week"] = gifts
-                        return True, "Perfect! All parameters collected."
+                        return True, f"✅ Perfect! {gifts} gifts per week. All set — creating your plan now!"
                     else:
-                        return False, "Can't give more than 7 gifts per week (one per day)."
+                        return False, f"❌ Invalid gift frequency: {gifts}\n\n**Can't give more than 7 gifts per week** (max 1 per day).\n\nTry: 1, 3, 5, or 7"
                 except ValueError:
-                    return False, "Please enter a number between 0-7."
+                    return False, f"❌ '{user_input}' is not a number.\n\n**Please enter a number between 0-7**\n\nExample: 3"
         
         elif action == ActionType.CREATE_FARM_PLAN:
             # Collect plot count
@@ -165,11 +201,11 @@ class ActionHandler:
                     plots = int(user_input.strip())
                     if 0 < plots <= 100:
                         action_context.state["plot_count"] = plots
-                        return True, f"Got {plots} plots. What's your seed budget?"
+                        return True, f"✅ {plots} plots noted. Now, what's your seed budget?"
                     else:
-                        return False, "Please enter a reasonable number of plots (1-100)."
+                        return False, f"❌ Invalid plot count: {plots}\n\n**Plots must be 1-100**.\n\nTry: 10, 20, 50, etc."
                 except ValueError:
-                    return False, "Please enter a number."
+                    return False, f"❌ '{user_input}' is not a number.\n\n**Please enter a number between 1-100**\n\nExample: 25"
             
             # Collect budget
             elif "budget" not in action_context.state:
@@ -177,13 +213,13 @@ class ActionHandler:
                     budget = int(user_input.strip())
                     if budget > 0:
                         action_context.state["budget"] = budget
-                        return True, "All parameters collected!"
+                        return True, f"✅ {budget}g budget set. Creating your farm plan now!"
                     else:
-                        return False, "Budget must be greater than 0."
+                        return False, f"❌ Invalid budget: {budget}\n\n**Budget must be positive (>0)**.\n\nTry: 1000, 5000, 10000"
                 except ValueError:
-                    return False, "Please enter a number."
+                    return False, f"❌ '{user_input}' is not a number.\n\n**Please enter your budget in gold**\n\nExample: 5000"
         
-        return False, "Unable to parse input."
+        return False, "Parameter collection error. Please try again."
     
     # ── Action Execution ──────────────────────────────────────────────────────
     
