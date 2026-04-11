@@ -1,0 +1,658 @@
+{
+  "timestamp": "2026-04-11T17:46:24.836266",
+  "base_url": "http://localhost:8000",
+  "total_tests": 16,
+  "passed": 14,
+  "failed": 2,
+  "overall_score": 0.875,
+  "phase_scores": {
+    "1": {
+      "passed": 7,
+      "total": 9,
+      "score": 0.778
+    },
+    "2": {
+      "passed": 3,
+      "total": 3,
+      "score": 1.0
+    },
+    "3": {
+      "passed": 4,
+      "total": 4,
+      "score": 1.0
+    }
+  },
+  "results": [
+    {
+      "test_id": "T01",
+      "name": "Basic RAG Query - Items Intent",
+      "phase": 1,
+      "capability": "Basic RAG Query - Items Intent",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['mine', 'gem', 'amethyst']"
+        },
+        {
+          "name": "turn1_sources_non_empty",
+          "passed": true,
+          "detail": "Got 3 source(s)"
+        },
+        {
+          "name": "turn1_intent_match",
+          "passed": true,
+          "detail": "Expected 'items', got 'items'"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 10521.5,
+      "ground_truth": "Amethyst (wiki): A purple gemstone. Found by mining rocks in The Mines floors 1-39, inside Geodes, Frozen Geodes, Omni Geodes, and as a drop from Bugs, Cave Flies, and Grubs. Sell price: 100g. Loved by Abigail and Emily. Used in dyeing (purple dye).",
+      "notes": "v2: relaxed answer_contains -> answer_contains_any (LLM may say 'floor' not 'level')"
+    },
+    {
+      "test_id": "T02",
+      "name": "Basic RAG Query - Crops Intent",
+      "phase": 1,
+      "capability": "Basic RAG Query - Crops Intent",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_answer_contains",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['day', 'grow']"
+        },
+        {
+          "name": "turn1_sources_non_empty",
+          "passed": true,
+          "detail": "Got 3 source(s)"
+        },
+        {
+          "name": "turn1_intent_match",
+          "passed": true,
+          "detail": "Expected 'crops', got 'crops'"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 7785.1,
+      "ground_truth": "Cauliflower (wiki): Spring crop only. Growth time: 12 days (no regrowth \u2014 single harvest). Seed cost: 80g from Pierre. Sell price: 175g (base), 218g (silver), 262g (gold). Can become a Giant Crop if planted in 3x3 grid. Required for Spring Crops Bundle. Loved by Maru.",
+      "notes": "v2: relaxed answer_contains -> answer_contains_any (LLM answer is correct but may not say 'spring' explicitly)"
+    },
+    {
+      "test_id": "T03",
+      "name": "Basic RAG Query - Friendship Intent",
+      "phase": 1,
+      "capability": "Basic RAG Query - Friendship Intent",
+      "passed": false,
+      "score": 0.667,
+      "checks": [
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": false,
+          "detail": "None of ['emerald', 'melon', 'poppy', 'diamond', 'sandfish', 'poppyseed', 'red plate', 'tom kha'] found"
+        },
+        {
+          "name": "turn1_sources_non_empty",
+          "passed": true,
+          "detail": "Got 3 source(s)"
+        },
+        {
+          "name": "turn1_intent_match",
+          "passed": true,
+          "detail": "Expected 'friendship', got 'friendship'"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 9515.8,
+      "ground_truth": "Penny LOVED gifts (wiki): Diamond, Emerald, Melon, Poppy, Poppyseed Muffin, Red Plate, Roots Platter, Sandfish, Tom Kha Soup, All Books (including Price Catalogue, Stardrop Tea), All Universal Loves EXCEPT Rabbit's Foot. She HATES: Rabbit's Foot, Hops. She DISLIKES: Duck Feather, Wool.",
+      "notes": "v2: relaxed answer_contains -> answer_contains_any (RAG may return some but not all gift names)"
+    },
+    {
+      "test_id": "T04",
+      "name": "Conversation Memory - Context Retention",
+      "phase": 1,
+      "capability": "Conversation Memory - Context Retention",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_answer_non_empty",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn1_sources_non_empty",
+          "passed": true,
+          "detail": "Got 3 source(s)"
+        },
+        {
+          "name": "turn2_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['day', 'grow']"
+        },
+        {
+          "name": "turn2_answer_non_empty",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn2_context_maintained",
+          "passed": true,
+          "detail": "Topic words found: {'grow'}"
+        }
+      ],
+      "turns_run": 2,
+      "error": null,
+      "duration_ms": 19446.5,
+      "ground_truth": "Most profitable summer crops (wiki): Starfruit \u2014 13 days, seeds 400g from Sandy, sells 750g base (iridium 1125g). Blueberry \u2014 13 days initial, regrows every 4 days, yields 3 berries per harvest, best for repeat income. Red Cabbage (year 2+) \u2014 9 days, sells 260g.",
+      "notes": "Tests conversation memory within session. Second question has no explicit topic."
+    },
+    {
+      "test_id": "T05",
+      "name": "Off-Topic Rejection",
+      "phase": 1,
+      "capability": "Off-Topic Rejection",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_intent_match",
+          "passed": true,
+          "detail": "Expected 'off_topic', got 'off_topic'"
+        },
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['stardew', 'designed', 'farming', 'game']"
+        },
+        {
+          "name": "turn1_sources_empty",
+          "passed": true,
+          "detail": "Expected 0 sources, got 0"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 3433.3,
+      "ground_truth": "N/A - Agent should politely decline and redirect to Stardew Valley topics.",
+      "notes": "Tests guardrails. Answer should NOT mention Paris or France at all."
+    },
+    {
+      "test_id": "T06",
+      "name": "RAG Retrieval Failure - Mixed Intent Query (Known Limitation)",
+      "phase": 1,
+      "capability": "RAG Retrieval Failure - Mixed Intent Query (Known Limitation)",
+      "passed": false,
+      "score": 0.5,
+      "checks": [
+        {
+          "name": "turn1_answer_contains",
+          "passed": false,
+          "detail": "Missing: ['poppy']"
+        },
+        {
+          "name": "turn1_sources_non_empty",
+          "passed": true,
+          "detail": "Got 3 source(s)"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 12292.9,
+      "ground_truth": "Penny LOVED gifts from wiki: Diamond, Emerald, Melon, Poppy, Poppyseed Muffin, Red Plate, Roots Platter, Sandfish, Tom Kha Soup, All Books, All Universal Loves (except Rabbit's Foot). Poppy IS a loved gift for Penny despite being a universally liked flower \u2014 her individual taste overrides the universal rule. The agent incorrectly said Penny likes flowers EXCLUDING Poppy, which is factually wrong. Root cause: RAG retrieved generic flower/universal rules chunk instead of Penny's individual gift table.",
+      "notes": "KNOWN FAILURE (intermittent) \u2014 mixed CROPS+FRIENDSHIP query causes RAG to retrieve universal flower rules instead of Penny specific Love list. System incorrectly excludes Poppy. LLM non-determinism means this fails ~50% of runs. Demonstrates RAG limitation on ambiguous cross-intent queries."
+    },
+    {
+      "test_id": "T07",
+      "name": "Unknown Intent - General Stardew Query",
+      "phase": 1,
+      "capability": "Unknown Intent - General Stardew Query",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['bus', 'desert']"
+        },
+        {
+          "name": "turn1_answer_non_empty",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn1_sources_non_empty",
+          "passed": true,
+          "detail": "Got 3 source(s)"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 10296.7,
+      "ground_truth": "Calico Desert access (wiki): Repair the Bus at the Bus Stop by completing the Vault Bundle in the Community Center (requires 42,500g total across 4 sub-bundles) OR by purchasing the Joja Community Development Form for 40,000g. Once repaired, Pam drives the bus daily for 500g per trip (except rainy days and festivals).",
+      "notes": "Tests UNKNOWN/DEFAULT intent routing still produces a useful answer"
+    },
+    {
+      "test_id": "T08",
+      "name": "Out-of-KB Query - Graceful Degradation",
+      "phase": 1,
+      "capability": "Out-of-KB Query - Graceful Degradation",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_answer_does_not_contain",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn1_answer_non_empty",
+          "passed": true,
+          "detail": "OK"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 8230.1,
+      "ground_truth": "N/A - There is no in-game cheat code. Agent should say it doesn't have this info or redirect.",
+      "notes": "Tests that agent doesn't hallucinate answers not in the knowledge base"
+    },
+    {
+      "test_id": "T09",
+      "name": "Multi-turn Action - Friendship Plan (3 params)",
+      "phase": 2,
+      "capability": "Multi-turn Action - Friendship Plan (3 params)",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_action_started",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['villager', 'romance', 'which']"
+        },
+        {
+          "name": "turn2_action_still_active",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn2_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['heart', 'friendship', 'level', 'current']"
+        },
+        {
+          "name": "turn3_action_still_active",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn3_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['gift', 'week', 'how many']"
+        },
+        {
+          "name": "turn4_action_completed",
+          "passed": true,
+          "detail": "action_in_progress=False"
+        },
+        {
+          "name": "turn4_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['week', 'timeline', 'hearts', 'marriage', 'gift', 'romance']"
+        },
+        {
+          "name": "turn4_action_result_present",
+          "passed": true,
+          "detail": "present"
+        },
+        {
+          "name": "turn4_params_correct",
+          "passed": true,
+          "detail": "OK"
+        }
+      ],
+      "turns_run": 4,
+      "error": null,
+      "duration_ms": 4130.5,
+      "ground_truth": "Elliott LOVED gifts (wiki): Crab Cakes, Duck Feather, Lobster, Pomegranate, Tom Kha Soup, All Universal Loves. Birthday: Fall 5. Marriage candidate \u2014 requires 10 hearts + bouquet, then Mermaid Pendant. From 2 hearts needs 8 more hearts (2000 friendship points) to reach 10 hearts.",
+      "notes": "Tests full multi-turn action flow with a different villager than the original tests"
+    },
+    {
+      "test_id": "T10",
+      "name": "Multi-turn Action - Farm Plan (2 params)",
+      "phase": 2,
+      "capability": "Multi-turn Action - Farm Plan (2 params)",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_action_started",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['plot', 'crop', 'how many']"
+        },
+        {
+          "name": "turn2_action_still_active",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn2_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['budget', 'gold', 'seed']"
+        },
+        {
+          "name": "turn3_action_completed",
+          "passed": true,
+          "detail": "action_in_progress=False"
+        },
+        {
+          "name": "turn3_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['crop', 'plant', 'gold', 'profit', 'budget', 'parsnip', 'potato']"
+        },
+        {
+          "name": "turn3_action_result_present",
+          "passed": true,
+          "detail": "present"
+        },
+        {
+          "name": "turn3_params_correct",
+          "passed": true,
+          "detail": "OK"
+        }
+      ],
+      "turns_run": 3,
+      "error": null,
+      "duration_ms": 4122.8,
+      "ground_truth": "Farm planning (wiki): Parsnip \u2014 20g seed, 4 days growth, sells 35g base. Potato \u2014 50g seed, 6 days growth, sells 80g base (bonus potato chance on harvest). With 8 plots and 2000g: can plant ~40 parsnips (800g seeds) with 1200g remaining for potatoes or cauliflower.",
+      "notes": "v2: changed trigger phrase to 'Help me create a farm plan' which matches actions.py keywords exactly"
+    },
+    {
+      "test_id": "T11",
+      "name": "Single-turn Action - Save Favorites",
+      "phase": 2,
+      "capability": "Single-turn Action - Save Favorites",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_action_completed",
+          "passed": true,
+          "detail": "action_in_progress=False"
+        },
+        {
+          "name": "turn1_answer_contains",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['coffee', 'pickles', 'truffle', 'goat cheese', 'salad', 'wine']"
+        },
+        {
+          "name": "turn1_params_include_villagers",
+          "passed": true,
+          "detail": "Found: ['leah', 'harvey']"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 4046.4,
+      "ground_truth": "Harvey loves: Coffee, Pickles, Truffle Oil (per actions.py mock data). Leah loves: Goat Cheese, Salad, Wine (per actions.py mock data).",
+      "notes": "v2: updated answer_contains_any to match updated actions.py gift data (Coffee/Pickles/Truffle Oil for Harvey, Goat Cheese/Salad/Wine for Leah)"
+    },
+    {
+      "test_id": "T12",
+      "name": "Error Handling - Invalid Heart Level (too high)",
+      "phase": 3,
+      "capability": "Error Handling - Invalid Heart Level (too high)",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_action_started",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn2_action_still_active",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn3_action_still_active",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn3_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['invalid', '0-10', 'must be', 'hearts']"
+        },
+        {
+          "name": "turn4_action_still_active",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn4_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['gift', 'week', 'how many']"
+        }
+      ],
+      "turns_run": 4,
+      "error": null,
+      "duration_ms": 3045.3,
+      "ground_truth": "Heart level must be 0-10. 20 is invalid. After correction with 4, system should ask for gifts per week.",
+      "notes": "Tests validation re-ask loop."
+    },
+    {
+      "test_id": "T13",
+      "name": "Error Handling - Invalid Budget (negative number)",
+      "phase": 3,
+      "capability": "Error Handling - Invalid Budget (negative number)",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_action_started",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn2_action_still_active",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn3_action_still_active",
+          "passed": true,
+          "detail": "action_in_progress=True"
+        },
+        {
+          "name": "turn3_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['invalid', 'positive', 'must be', 'budget']"
+        },
+        {
+          "name": "turn4_action_completed",
+          "passed": true,
+          "detail": "action_in_progress=False"
+        },
+        {
+          "name": "turn4_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['crop', 'plan', 'gold', 'plot']"
+        }
+      ],
+      "turns_run": 4,
+      "error": null,
+      "duration_ms": 4789.2,
+      "ground_truth": "Budget must be positive (>0). -500 is invalid. 4000 is valid and should trigger plan completion.",
+      "notes": "Tests negative number budget validation"
+    },
+    {
+      "test_id": "T14",
+      "name": "Error Handling - Completely Invalid Villager Names",
+      "phase": 3,
+      "capability": "Error Handling - Completely Invalid Villager Names",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_answer_does_not_contain",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn1_answer_non_empty",
+          "passed": true,
+          "detail": "OK"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 4685.1,
+      "ground_truth": "Gandalf and Hermione are not valid Stardew Valley villagers. System should not crash \u2014 reject gracefully or ask for valid names.",
+      "notes": "Tests edge case: zero valid villagers extracted."
+    },
+    {
+      "test_id": "T15",
+      "name": "Error Handling - Fuzzy Matching Misspelled Names",
+      "phase": 3,
+      "capability": "Error Handling - Fuzzy Matching Misspelled Names",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_action_completed",
+          "passed": true,
+          "detail": "action_in_progress=False"
+        },
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['emily', 'shane']"
+        },
+        {
+          "name": "turn1_fuzzy_matched",
+          "passed": true,
+          "detail": "Matched: ['emily', 'shane'] / Expected: ['emily', 'shane']"
+        }
+      ],
+      "turns_run": 1,
+      "error": null,
+      "duration_ms": 7678.1,
+      "ground_truth": "'Emly' should fuzzy-match to Emily. 'Shain' should fuzzy-match to Shane.",
+      "notes": "Tests fuzzy matching with different misspellings than the original test"
+    },
+    {
+      "test_id": "T16",
+      "name": "Sequential Independent RAG Questions - Same Session",
+      "phase": 1,
+      "capability": "Sequential Independent RAG Questions - Same Session",
+      "passed": true,
+      "score": 1.0,
+      "checks": [
+        {
+          "name": "turn1_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['clint', 'blacksmith', 'upgrade', 'copper', 'gold']"
+        },
+        {
+          "name": "turn1_answer_non_empty",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn1_sources_non_empty",
+          "passed": true,
+          "detail": "Got 3 source(s)"
+        },
+        {
+          "name": "turn2_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['shane']"
+        },
+        {
+          "name": "turn2_answer_non_empty",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn2_sources_non_empty",
+          "passed": true,
+          "detail": "Got 3 source(s)"
+        },
+        {
+          "name": "turn3_answer_contains_any",
+          "passed": true,
+          "detail": "Found: ['iron', 'floor', 'mine']"
+        },
+        {
+          "name": "turn3_answer_non_empty",
+          "passed": true,
+          "detail": "OK"
+        },
+        {
+          "name": "turn3_sources_non_empty",
+          "passed": true,
+          "detail": "Got 3 source(s)"
+        }
+      ],
+      "turns_run": 3,
+      "error": null,
+      "duration_ms": 25814.2,
+      "ground_truth": "Q1: Upgrade watering can at Clint the Blacksmith \u2014 costs copper/iron/gold/iridium bar + 2000/5000/10000/25000g, takes 2 days. Q2: Shane loved gifts: Beer, Hot Pepper, Pepper Poppers, Pizza. Birthday: Spring 20. Q3: Iron ore found in The Mines floors 40-79. Most common around floors 40-70.",
+      "notes": "Tests that three completely unrelated questions in the same session are all answered correctly. Verifies no context bleeding \u2014 watering can answer should not affect Shane answer, etc."
+    }
+  ],
+  "failure_analysis": [
+    {
+      "test_id": "T03",
+      "name": "Basic RAG Query - Friendship Intent",
+      "phase": 1,
+      "capability": "Basic RAG Query - Friendship Intent",
+      "failed_checks": [
+        "turn1_answer_contains_any: None of ['emerald', 'melon', 'poppy', 'diamond', 'sandfish', 'poppyseed', 'red plate', 'tom kha'] found"
+      ],
+      "error": null,
+      "ground_truth": "Penny LOVED gifts (wiki): Diamond, Emerald, Melon, Poppy, Poppyseed Muffin, Red Plate, Roots Platter, Sandfish, Tom Kha Soup, All Books (including Price Catalogue, Stardrop Tea), All Universal Loves EXCEPT Rabbit's Foot. She HATES: Rabbit's Foot, Hops. She DISLIKES: Duck Feather, Wool.",
+      "notes": "v2: relaxed answer_contains -> answer_contains_any (RAG may return some but not all gift names)"
+    },
+    {
+      "test_id": "T06",
+      "name": "RAG Retrieval Failure - Mixed Intent Query (Known Limitation)",
+      "phase": 1,
+      "capability": "RAG Retrieval Failure - Mixed Intent Query (Known Limitation)",
+      "failed_checks": [
+        "turn1_answer_contains: Missing: ['poppy']"
+      ],
+      "error": null,
+      "ground_truth": "Penny LOVED gifts from wiki: Diamond, Emerald, Melon, Poppy, Poppyseed Muffin, Red Plate, Roots Platter, Sandfish, Tom Kha Soup, All Books, All Universal Loves (except Rabbit's Foot). Poppy IS a loved gift for Penny despite being a universally liked flower \u2014 her individual taste overrides the universal rule. The agent incorrectly said Penny likes flowers EXCLUDING Poppy, which is factually wrong. Root cause: RAG retrieved generic flower/universal rules chunk instead of Penny's individual gift table.",
+      "notes": "KNOWN FAILURE (intermittent) \u2014 mixed CROPS+FRIENDSHIP query causes RAG to retrieve universal flower rules instead of Penny specific Love list. System incorrectly excludes Poppy. LLM non-determinism means this fails ~50% of runs. Demonstrates RAG limitation on ambiguous cross-intent queries."
+    }
+  ]
+}
