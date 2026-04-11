@@ -392,19 +392,19 @@ class ActionHandler:
         
         # Mock favorite gifts data
         favorites = {
-            "abigail": ["Flute Block", "Amethyst", "Blackberry Cobbler"],
-            "sebastian": ["Void Mayonnaise", "Spaghetti", "Leather Boots"],
-            "haley": ["Diamond", "Gold Bar", "Pink Cake"],
-            "emily": ["Amethyst", "Emerald", "Wool"],
-            "penny": ["Emerald", "Melon", "Poppy"],
-            "leah": ["Gold Bar", "Wood Flute", "Wildflower Seeds"],
-            "maru": ["Gold Bar", "Iron Bar", "Refined Quartz"],
-            "harvey": ["Gold Bar", "Pepper Poppers", "Surgical Mask"],
-            "elliott": ["Gold Bar", "Pomegranate", "Sea Urchin"],
-            "shane": ["Beer", "Pepper Poppers", "Winter Seeds"],
-            "alex": ["Gold Bar", "Grilled Leek", "Salmon Dinner"],
-        }
-        
+        "abigail":  ["Amethyst", "Chocolate Cake", "Pumpkin"],
+        "sebastian": ["Frozen Tear", "Obsidian", "Void Egg"], 
+        "haley":    ["Coconut", "Fruit Salad", "Pink Cake"],
+        "emily":    ["Amethyst", "Aquamarine", "Cloth"],
+        "penny":    ["Emerald", "Melon", "Poppy"],
+        "leah":     ["Goat Cheese", "Salad", "Wine"],
+        "maru":     ["Battery Pack", "Cauliflower", "Diamond"],
+        "harvey":   ["Coffee", "Pickles", "Truffle Oil"],
+        "elliott":  ["Crab Cakes", "Duck Feather", "Pomegranate"],
+        "shane":    ["Hot Pepper", "Beer", "Pizza"],
+        "alex":     ["Complete Breakfast", "Salmon Dinner"],
+    }
+            
         # Build summary for all villagers
         save_id = f"favorites_{len(villagers)}_villagers_{int(datetime.now().timestamp())}"
         saved_data = {}
