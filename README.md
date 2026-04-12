@@ -217,6 +217,6 @@ This includes prerequisites, all 7 installation steps, running tests, troublesho
 
 ### Demo
 
-[![Alt Text](<img width="2639" height="1321" alt="image" src="https://github.com/user-attachments/assets/2c7e2a57-214b-44ca-ad87-e87d1da9d1e0" />
-)]([https://www.youtube.com/watch?v=kNa_qY4sOPI]
+![Alt Text](<img width="2639" height="1321" alt="image" src="https://github.com/user-attachments/assets/2c7e2a57-214b-44ca-ad87-e87d1da9d1e0" />
+)(https://www.youtube.com/watch?v=kNa_qY4sOPI)
 
