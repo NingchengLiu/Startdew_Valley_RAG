@@ -1,5 +1,5 @@
 ﻿# LangChain ecosystem (matches lab)
-numpy<2
+numpy
 langchain
 langchain-community
 langchain-text-splitters
