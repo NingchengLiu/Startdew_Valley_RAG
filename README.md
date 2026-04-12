@@ -214,3 +214,6 @@ See [TESTING_GUIDE_UI.md](TESTING_GUIDE_UI.md) for comprehensive 10-test verific
 **For complete step-by-step installation and running instructions, see [SETUP.md](SETUP.md).**
 
 This includes prerequisites, all 7 installation steps, running tests, troubleshooting, and API reference.
+
+### Demo
+![LLM Demo](https://youtu.be/kNa_qY4sOPI)
