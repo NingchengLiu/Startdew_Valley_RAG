@@ -152,7 +152,6 @@ Stardew_Valley_RAG/
 │   ├── index/                      # FAISS index (generated, not committed)
 │   └── tests/                      # 200+ unit & integration tests
 │
-├── src/                            # Original implementation (legacy)
 ├── docs/                           # Documentation
 ├── notebooks/                      # Exploration notebooks
 └── tests/                          # Top-level tests
