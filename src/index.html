@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stardew Valley RAG Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: 
+                linear-gradient(to right, 
+                    rgba(100, 180, 120, 0.1) 0%,
+                    rgba(220, 180, 90, 0.1) 50%,
+                    rgba(100, 180, 120, 0.1) 100%),
+                linear-gradient(135deg, #90C590 0%, #7DB885 30%, #D4B896 50%, #90C590 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Decorative background elements */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(139, 195, 74, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(165, 140, 95, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body > .container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: linear-gradient(180deg, #faf6f0 0%, #f5f0e8 100%);
+            border-radius: 12px;
+            box-shadow: 
+                0 8px 32px rgba(45, 90, 61, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            max-height: 800px;
+            border: 3px solid #9B8B7E;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3D6B4F 0%, #2A5A3D 100%);
+            color: #E8D5C4;
+            padding: 20px;
+            border-bottom: 3px solid #D4A574;
+            text-align: center;
+            position: relative;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .header::before {
+            content: '🌾';
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            opacity: 0.7;
+        }
+
+        .header::after {
+            content: '🐔';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            opacity: 0.7;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: linear-gradient(to bottom, #fdfbf7 0%, #f9f5ef 100%);
+            position: relative;
+        }
+
+        /* Subtle pattern overlay */
+        .chat-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(212, 165, 116, 0.02) 2px,
+                    rgba(212, 165, 116, 0.02) 4px
+                );
+            pointer-events: none;
+        }
+
+        .chat-area > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease-out;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            align-items: flex-end;
+        }
+
+        .message.bot {
+            align-items: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message-content p {
+            margin: 8px 0;
+        }
+
+        .message-content p:first-child {
+            margin-top: 0;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content strong {
+            font-weight: 600;
+            color: inherit;
+        }
+
+        .message-content em {
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        .user .message-content {
+            background: linear-gradient(135deg, #3D6B4F 0%, #2A5A3D 100%);
+            color: #E8D5C4;
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 2px 6px rgba(45, 90, 61, 0.2);
+        }
+
+        .bot .message-content {
+            background: linear-gradient(135deg, #EBE0D0 0%, #E0D5C5 100%);
+            color: #2A5A3D;
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 2px 6px rgba(100, 100, 100, 0.1);
+        }
+
+        .bot-info {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .agent-badge {
+            background: linear-gradient(135deg, #90C590 0%, #7DB885 100%);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(45, 90, 61, 0.2);
+            display: inline-block;
+            margin-top: 6px;
+            margin-bottom: 4px;
+        }
+
+        .details-toggle {
+            background: linear-gradient(135deg, #D4A574 0%, #C49060 100%);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-block;
+            text-align: left;
+            gap: 4px;
+            box-shadow: 0 1px 3px rgba(45, 90, 61, 0.15);
+            transition: all 0.2s ease;
+            margin-top: 6px;
+        }
+
+        .details-toggle:hover {
+            background: linear-gradient(135deg, #C49060 0%, #B87F50 100%);
+            box-shadow: 0 2px 6px rgba(45, 90, 61, 0.25);
+        }
+
+        .details-toggle:active {
+            transform: scale(0.98);
+        }
+
+        .details-toggle.expanded::before {
+            content: '▼ ';
+        }
+
+        .details-toggle:not(.expanded)::before {
+            content: '▶ ';
+        }
+
+        .collapsible-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .collapsible-details.expanded {
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 8px;
+        }
+
+        .details-content {
+            background: linear-gradient(135deg, #F5F0E8 0%, #EFEFEF 100%);
+            padding: 10px 12px;
+            border-radius: 6px;
+            border-left: 3px solid #D4A574;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        .detail-section {
+            margin-bottom: 8px;
+        }
+
+        .detail-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #3D6B4F;
+            margin-bottom: 2px;
+        }
+
+        .intent-badge {
+            background: linear-gradient(135deg, #D4A574 0%, #C49060 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .confidence {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .confidence-bar {
+            width: 50px;
+            height: 6px;
+            background: #E0D5C5;
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid #D4A574;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8BC34A 0%, #7DB885 100%);
+            border-radius: 3px;
+        }
+
+        .source {
+            font-size: 10px;
+            color: #666;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #E0D5C5;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-weight: 500;
+        }
+
+        .source-link {
+            color: #3D6B4F;
+            text-decoration: none;
+            border-bottom: 1px dotted #3D6B4F;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .source-link:hover {
+            text-decoration: underline;
+            color: #2A5A3D;
+        }
+
+        .input-area {
+            padding: 16px;
+            border-top: 2px solid #D4A574;
+            background: linear-gradient(to bottom, #faf6f0 0%, #f5f0e8 100%);
+            display: flex;
+            gap: 8px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 14px;
+            border: 2px solid #D4A574;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            background: white;
+            color: #2A5A3D;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-field::placeholder {
+            color: #A0A0A0;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #3D6B4F;
+            box-shadow: 
+                inset 0 1px 3px rgba(0, 0, 0, 0.05),
+                0 0 8px rgba(61, 107, 79, 0.3);
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #3D6B4F 0%, #2A5A3D 100%);
+            color: #E8D5C4;
+            border: 2px solid #2A5A3D;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            box-shadow: 0 2px 6px rgba(45, 90, 61, 0.2);
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(45, 90, 61, 0.35);
+            background: linear-gradient(135deg, #4D7B5F 0%, #3A6A4D 100%);
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(45, 90, 61, 0.2);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .loading span {
+            width: 8px;
+            height: 8px;
+            background: #3D6B4F;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite;
+        }
+
+        .loading span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scaleY(1);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scaleY(1.2);
+                opacity: 1;
+            }
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+            color: #B71C1C;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #C62828;
+            margin-bottom: 10px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(198, 40, 40, 0.15);
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #999;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #2A5A3D;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌾 Stardew Valley Chatbot</h1>
+            <p>Ask about crops, items, villagers, and more!</p>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <p>Welcome to the Stardew Valley RAG Chatbot!</p>
+                <p style="font-size: 12px; color: #bbb;">Ask a question to get started...</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input 
+                type="text" 
+                class="input-field" 
+                id="inputField" 
+                placeholder="Ask about crops, items, villagers..."
+                autocomplete="off"
+            >
+            <button class="send-button" id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatArea = document.getElementById('chatArea');
+        const inputField = document.getElementById('inputField');
+        const sendButton = document.getElementById('sendButton');
+
+        // Clear empty state on first message
+        function clearEmptyState() {
+            if (chatArea.querySelector('.empty-state')) {
+                chatArea.innerHTML = '';
+            }
+        }
+
+        // Format message content (handle markdown-like syntax and newlines)
+        function formatMessageContent(text) {
+            const div = document.createElement('div');
+            div.style.whiteSpace = 'pre-wrap';
+            div.style.wordWrap = 'break-word';
+            
+            // Split by newlines to preserve line breaks
+            const lines = text.split('\n');
+            
+            lines.forEach((line, idx) => {
+                const p = document.createElement('p');
+                p.style.margin = '8px 0';
+                
+                // Handle bullets
+                if (line.trim().startsWith('-')) {
+                    p.style.marginLeft = '16px';
+                    p.style.marginTop = '4px';
+                    p.style.marginBottom = '4px';
+                    line = line.replace(/^-\s*/, '• ');
+                }
+                
+                // Parse bold text (**text**)
+                let html = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Parse italic text (*text*)
+                html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+                
+                p.innerHTML = html;
+                div.appendChild(p);
+            });
+            
+            return div;
+        }
+
+        // Add message to chat
+        function addMessage(content, isUser, metadata = null) {
+            clearEmptyState();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            if (isUser) {
+                contentDiv.textContent = content;
+            } else {
+                // Format bot responses with markdown support
+                contentDiv.appendChild(formatMessageContent(content));
+            }
+
+            messageDiv.appendChild(contentDiv);
+
+            if (!isUser && metadata) {
+                // Agent badge (inline)
+                if (metadata.agent_type) {
+                    const agentBadge = document.createElement('span');
+                    agentBadge.className = 'agent-badge';
+                    agentBadge.style.display = 'inline-block';
+                    agentBadge.style.marginTop = '8px';
+                    agentBadge.textContent = '🤖 ' + metadata.agent_type;
+                    messageDiv.appendChild(agentBadge);
+                }
+
+                // "See more details" button - appears at the bottom
+                if ((metadata.sources && metadata.sources.length > 0) || metadata.intent_confidence !== undefined || metadata.session_id || metadata.action_result) {
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.className = 'details-toggle';
+                    toggleBtn.textContent = 'See more details';
+                    toggleBtn.style.display = 'block';
+                    toggleBtn.style.marginTop = '8px';
+                    toggleBtn.onclick = function(e) {
+                        e.preventDefault();
+                        const detailsDiv = this.nextElementSibling;
+                        this.classList.toggle('expanded');
+                        detailsDiv.classList.toggle('expanded');
+                    };
+                    messageDiv.appendChild(toggleBtn);
+
+                    // Collapsible details section
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.className = 'collapsible-details';
+                    
+                    const detailsContent = document.createElement('div');
+                    detailsContent.className = 'details-content';
+
+                    // Session ID
+                    if (metadata.session_id) {
+                        const sessionSection = document.createElement('div');
+                        sessionSection.className = 'detail-section';
+                        const sessionLabel = document.createElement('div');
+                        sessionLabel.className = 'detail-label';
+                        sessionLabel.textContent = 'Session ID';
+                        sessionSection.appendChild(sessionLabel);
+                        const sessionText = document.createElement('div');
+                        sessionText.style.fontSize = '11px';
+                        sessionText.style.fontFamily = 'monospace';
+                        sessionText.style.wordBreak = 'break-all';
+                        sessionText.textContent = metadata.session_id;
+                        sessionSection.appendChild(sessionText);
+                        detailsContent.appendChild(sessionSection);
+                    }
+
+                    // Action Result (parameters)
+                    if (metadata.action_result) {
+                        const actionSection = document.createElement('div');
+                        actionSection.className = 'detail-section';
+                        const actionLabel = document.createElement('div');
+                        actionLabel.className = 'detail-label';
+                        actionLabel.textContent = 'Action Details';
+                        actionSection.appendChild(actionLabel);
+                        
+                        if (metadata.action_result.action_type) {
+                            const actionType = document.createElement('div');
+                            actionType.style.fontSize = '12px';
+                            actionType.textContent = '📋 ' + metadata.action_result.action_type;
+                            actionSection.appendChild(actionType);
+                        }
+                        
+                        if (metadata.action_result.parameters && Object.keys(metadata.action_result.parameters).length > 0) {
+                            const paramsLabel = document.createElement('div');
+                            paramsLabel.style.fontSize = '11px';
+                            paramsLabel.style.marginTop = '6px';
+                            paramsLabel.style.fontWeight = 'bold';
+                            paramsLabel.textContent = 'Parameters:';
+                            actionSection.appendChild(paramsLabel);
+                            
+                            Object.entries(metadata.action_result.parameters).forEach(([key, value]) => {
+                                const paramLine = document.createElement('div');
+                                paramLine.style.fontSize = '11px';
+                                paramLine.style.marginLeft = '12px';
+                                paramLine.textContent = `• ${key}: ${value}`;
+                                actionSection.appendChild(paramLine);
+                            });
+                        }
+                        
+                        detailsContent.appendChild(actionSection);
+                    }
+
+                    // Intent and Confidence
+                    if (metadata.intent_type || metadata.intent_confidence !== undefined) {
+                        const intentSection = document.createElement('div');
+                        intentSection.className = 'detail-section';
+                        const intentLabel = document.createElement('div');
+                        intentLabel.className = 'detail-label';
+                        intentLabel.textContent = 'Query Intent';
+                        intentSection.appendChild(intentLabel);
+                        
+                        const intentText = document.createElement('div');
+                        if (metadata.intent_type) {
+                            intentText.textContent = metadata.intent_type.toUpperCase();
+                            if (metadata.intent_confidence !== undefined) {
+                                intentText.textContent += ` • Confidence: ${Math.round(metadata.intent_confidence * 100)}%`;
+                            }
+                        }
+                        intentSection.appendChild(intentText);
+                        detailsContent.appendChild(intentSection);
+                    }
+
+                    // Sources
+                    if (metadata.sources && metadata.sources.length > 0) {
+                        const sourceSection = document.createElement('div');
+                        sourceSection.className = 'detail-section';
+                        const sourceLabel = document.createElement('div');
+                        sourceLabel.className = 'detail-label';
+                        sourceLabel.textContent = 'Sources (' + metadata.sources.length + ')';
+                        sourceSection.appendChild(sourceLabel);
+                        
+                        metadata.sources.forEach((source, idx) => {
+                            const sourceItem = document.createElement('div');
+                            sourceItem.style.marginBottom = '6px';
+                            sourceItem.style.fontSize = '9px';
+                            const link = document.createElement('a');
+                            link.href = source.url;
+                            link.target = '_blank';
+                            link.className = 'source-link';
+                            link.style.color = '#3D6B4F';
+                            link.style.textDecoration = 'underline';
+                            link.textContent = source.page_title + ' (score: ' + (source.score || 0).toFixed(2) + ')';
+                            sourceItem.appendChild(link);
+                            sourceSection.appendChild(sourceItem);
+                        });
+                        detailsContent.appendChild(sourceSection);
+                    }
+
+                    detailsDiv.appendChild(detailsContent);
+                    messageDiv.appendChild(detailsDiv);
+                }
+            }
+
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // Initialize session ID (stored in localStorage)
+        function getOrCreateSessionId() {
+            let sessionId = localStorage.getItem('stardew_session_id');
+            if (!sessionId) {
+                sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('stardew_session_id', sessionId);
+            }
+            return sessionId;
+        }
+
+        // Display session info (optional - for debugging)
+        function updateSessionDisplay() {
+            const sessionId = getOrCreateSessionId();
+            const sessionDisplay = document.getElementById('session-display');
+            if (sessionDisplay) {
+                sessionDisplay.textContent = 'Session: ' + sessionId.slice(0, 20) + '...';
+            }
+        }
+
+        // Send message to API
+        async function sendMessage() {
+            const query = inputField.value.trim();
+            if (!query) return;
+
+            // Clear input and disable button
+            inputField.value = '';
+            sendButton.disabled = true;
+
+            // Add user message
+            addMessage(query, true);
+
+            // Add loading indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot';
+            loadingDiv.innerHTML = '<div class="loading"><span></span><span></span><span></span></div>';
+            chatArea.appendChild(loadingDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            try {
+                const sessionId = getOrCreateSessionId();
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        top_k: 3,
+                        include_reasoning: false,
+                        session_id: sessionId,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Remove loading indicator
+                loadingDiv.remove();
+
+                // Add bot response
+                addMessage(data.answer, false, {
+                    intent_type: data.intent_type,
+                    intent_confidence: data.intent_confidence,
+                    sources: data.sources,
+                    session_id: data.session_id,
+                    action_result: data.action_result,
+                });
+            } catch (error) {
+                // Remove loading indicator
+                loadingDiv.remove();
+
+                // Show error
+                clearEmptyState();
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = `Error: ${error.message}. Make sure the API is running at localhost:8000`;
+                chatArea.appendChild(errorDiv);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            } finally {
+                sendButton.disabled = false;
+                inputField.focus();
+            }
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        inputField.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Initialize on page load
+        updateSessionDisplay();
+        inputField.focus();
+    </script>
+</body>
+</html>
