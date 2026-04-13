@@ -21,7 +21,7 @@ The RAG system combines data preparation, semantic retrieval, intent routing, an
 
 ```
 ╔═══════════════════════════════════════════════════════════════════╗
-║                    DATA PREPARATION PIPELINE                     ║
+║                    DATA PREPARATION PIPELINE                      ║
 ╚═══════════════════════════════════════════════════════════════════╝
 
 Wiki Data (JSONL)
@@ -43,7 +43,7 @@ build_index.py
     └─ Save index to disk (index/section_recursive/)
 
 ╔═══════════════════════════════════════════════════════════════════╗
-║              RUNTIME MULTI-AGENT RAG PIPELINE                    ║
+║              RUNTIME MULTI-AGENT RAG PIPELINE                     ║
 ╚═══════════════════════════════════════════════════════════════════╝
 
 Session Management (localStorage + Backend)
@@ -56,42 +56,42 @@ Orchestrator (orchestrator.py)
     
     ↓ ↓ ↓ ↓ ↓
     
-    ┌─────────────────────────────────────────────────────────────┐
-    │              KNOWLEDGE AGENTS (parallel)                    │
-    ├─────────────────────────────────────────────────────────────┤
-    │                                                              │
-    │  CropPlanner      ItemFinder      FriendshipFinder      DefaultAgent
-    │     Agent            Agent            Agent                Agent
-    │       │                │                │                   │
-    │       └────────────────┴────────────────┴───────────────────┘
-    │                        │
-    │             retriever.py (FAISS)
-    │             • Embed query
-    │             • Semantic search
-    │             • Retrieve top-k wiki chunks
-    │                        │
-    │             llm.py (Qwen3-30B)
-    │             • Augment with context
-    │             • Generate grounded answer
-    │                        │
-    │        Output: Answer + Sources + Intent + Confidence
-    │                                                              │
-    └─────────────────────────────────────────────────────────────┘
+    ┌───────────────────────────────────────────────────────────────────────┐
+    │                     KNOWLEDGE AGENTS (parallel)                       │
+    ├───────────────────────────────────────────────────────────────────────┤
+    │                                                                       │
+    │  CropPlanner      ItemFinder      FriendshipFinder      DefaultAgent  │
+    │     Agent            Agent            Agent                Agent      │
+    │       │                │                │                   │         │
+    │       └────────────────┴────────────────┴───────────────────┘         │
+    │                                │                                      │
+    │                     retriever.py (FAISS)                              │
+    │                         • Embed query                                 │
+    │                         • Semantic search                             │
+    │                         • Retrieve top-k wiki chunks                  │
+    │                                │                                      │
+    │                     llm.py (Qwen3-30B)                                │
+    │                         • Augment with context                        │
+    │                         • Generate grounded answer                    │
+    │                                │                                      │
+    │            Output: Answer + Sources + Intent + Confidence             │
+    │                                                                       │
+    └───────────────────────────────────────────────────────────────────────┘
     
     OR (if action detected)
     
     ┌─────────────────────────────────────────────────────────────┐
     │         ACTION HANDLER (actions.py - separate flow)         │
     ├─────────────────────────────────────────────────────────────┤
-    │                                                              │
+    │                                                             │
     │  Multi-turn Parameter Collection:                           │
-    │  • CREATE_FRIENDSHIP_PLAN (villager, hearts, gifts/week)   │
-    │  • CREATE_FARM_PLAN (plot_count, budget)                   │
-    │  • SAVE_FAVORITES (auto-extract + fuzzy match)             │
-    │                                                              │
-    │  Validation → Parameter Refinement → Execution             │
-    │  Output: Detailed action result with strategy & tips       │
-    │                                                              │
+    │  • CREATE_FRIENDSHIP_PLAN (villager, hearts, gifts/week)    │
+    │  • CREATE_FARM_PLAN (plot_count, budget)                    │
+    │  • SAVE_FAVORITES (auto-extract + fuzzy match)              │
+    │                                                             │
+    │  Validation → Parameter Refinement → Execution              │
+    │  Output: Detailed action result with strategy & tips        │
+    │                                                             │
     └─────────────────────────────────────────────────────────────┘
 
 Multi-Turn Conversation Flow:
@@ -102,7 +102,7 @@ Multi-Turn Conversation Flow:
 ```
 
 **Key Capabilities:**
-- ✅ Semantic knowledge retrieval with FAISS indexing (13,813 chunks)
+- ✅ Semantic knowledge retrieval with FAISS indexing
 - ✅ Intent classification with 5 routing categories
 - ✅ Multi-turn dialogue with session persistence
 - ✅ Specialized knowledge agents (crops, items, friendship, general)
@@ -129,7 +129,6 @@ Stardew_Valley_RAG/
 ├── README.md                       # Project overview (this file)
 ├── SETUP.md                        # Installation & running instructions
 ├── TESTING_GUIDE_UI.md             # 10-test manual browser verification suite
-├── DEPLOYMENT_GUIDE.md             # Deployment options (Render, Docker, Heroku)
 ├── .env                            # Configuration (not committed)
 ├── requirements.txt                # Python dependencies
 │
@@ -183,12 +182,12 @@ Stardew_Valley_RAG/
 | `interim/stardew_wiki_cleaned.jsonl` | Page-level | 2,585 | Cleaned aggregation |
 | `processed/stardew_wiki_sections.jsonl` | Section-level | 11,748 | ✅ RAG input |
 
-After chunking with `RecursiveCharacterTextSplitter(512, 64)`, the 11,748 sections produce **13,813 chunks** in the FAISS index.
-
-Filters applied during processing:
+Filters applied during processing (11,748 --> 8,674 after filters):
 - Removed chunks under 50 characters
 - Removed `Modding:` and `Module:` wiki pages
 - Removed binary/corrupted records
+
+After chunking with `RecursiveCharacterTextSplitter(512, 64)`, the 11,748 sections produce **13,813 chunks** in the FAISS index.
 
 ## Chunking Strategy
 
@@ -240,7 +239,7 @@ pytest tests/ -v
 ```
 
 
-### Requirement 2: Agent Capabilities ✅
+### Agent Capabilities ✅
 
 | Capability | Status | Details |
 |-----------|--------|---------|
@@ -251,7 +250,7 @@ pytest tests/ -v
 | **Conversation Memory** | ✅ | Full history per session (localStorage + backend) |
 | **Guardrails** | ✅ | Off-topic detection, parameter validation, error handling |
 
-### Requirement 3: Agent Evaluation ✅
+### Agent Evaluation ✅
 
 **16 Automated Test Cases across 3 phases:**
 - **Phase 1** (Knowledge & Safety): Basic RAG queries (items, crops, friendship), conversation memory, off-topic rejection, unknown intent, out-of-KB graceful degradation
