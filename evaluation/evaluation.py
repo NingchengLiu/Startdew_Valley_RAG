@@ -6,7 +6,7 @@ Loads test cases from test_cases.json and runs them against the live API.
 Usage
 -----
     # Start server first:
-    # cd src2 && python -m uvicorn app:app --port 8000
+    # cd src && python -m uvicorn app:app --port 8000
 
     python evaluation.py                          # Run all tests
     python evaluation.py --phase 1                # Phase 1 only

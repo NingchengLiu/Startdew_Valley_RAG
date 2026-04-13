@@ -2,7 +2,7 @@
 
 **Access the UI:** http://localhost:8000
 
-**Server must be running:** `cd src2 && python -m uvicorn app:app --port 8000`
+**Server must be running:** `cd src && python -m uvicorn app:app --port 8000`
 
 All tests use the **Browser UI**. Simply type in the message box and hit Send/Enter.
 

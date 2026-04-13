@@ -9,8 +9,8 @@ Or:       python3 tests/agent_tests/test_orchestrator.py
 import sys
 from pathlib import Path
 
-# Add src2 to path so we can import orchestrator and llm
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src2"))
+# Add src to path so we can import orchestrator and llm
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from orchestrator import route_intent, IntentType
 

@@ -56,7 +56,7 @@ Replace `your-student-id` with your actual student ID.
 ### 5. Build FAISS Vector Index
 
 ```bash
-python3 src2/build_index.py --input data/processed/stardew_wiki_sections.jsonl
+python3 src/build_index.py --input data/processed/stardew_wiki_sections.jsonl
 ```
 
 **Runtime:** ~1-2 minutes (one-time only). Uses A2 embeddings endpoint to create the vector search index from wiki chunks.
@@ -64,7 +64,7 @@ python3 src2/build_index.py --input data/processed/stardew_wiki_sections.jsonl
 ### 6. Start the Server
 
 ```bash
-cd src2
+cd src
 uvicorn app:app --reload --port 8000
 ```
 
@@ -86,31 +86,32 @@ You can now ask questions like:
 ## Testing
 
 ### Manual Testing
-See [TESTING_GUIDE_UI.md](TESTING_GUIDE_UI.md) for the 10-test comprehensive manual verification suite (browser-based).
+See [TESTING_GUIDE_UI.md](TESTING_GUIDE_UI.md) for the 10-test manual verification suite (browser-based).
 
-### Automated Test Suite
-`src2/tests/` contains 200+ unit and integration tests covering:
-- Embeddings and vector retrieval
-- Intent routing and classification
-- Semantic search (FAISS)
-- Action handling and parameter validation
-- Session management and conversation history
-- Error scenarios and edge cases
+### Automated Evaluation Suite
+The `evaluation/` folder contains 16 automated test cases that run against the live `/chat` API:
 
-Run tests in a new terminal (with venv activated):
+```bash
+# Start server first (in one terminal):
+cd src && uvicorn app:app --reload --port 8000
+
+# Run evaluation (in another terminal):
+python evaluation/evaluation.py                   # All 16 tests
+python evaluation/evaluation.py --phase 1          # Phase 1 only
+python evaluation/evaluation.py --test T05         # Single test
+python evaluation/evaluation.py --output results.json  # Save JSON report
+```
+
+### Unit & Integration Tests
+The `tests/` folder contains unit tests for intent routing, actions, and sessions:
 
 ```bash
 # All tests
-pytest src2/tests/ -v
+pytest ./tests/ -v
 
 # Specific test file
-pytest src2/tests/test_orchestrator.py -v
-
-# With coverage report
-pytest src2/tests/ --cov=src2 --cov-report=html
+pytest ./tests/agent_tests/test_orchestrator.py -v
 ```
-
-**Expected:** 200+ tests pass ✅
 
 ## Troubleshooting
 
@@ -118,7 +119,7 @@ pytest src2/tests/ --cov=src2 --cov-report=html
 
 Use a different port:
 ```bash
-uvicorn src2/app:app --port 9000 --reload
+uvicorn src/app:app --port 9000 --reload
 ```
 
 Or find and kill the process using port 8000:
@@ -131,7 +132,7 @@ kill -9 <PID>  # Kill it
 
 Build the index:
 ```bash
-python3 src2/build_index.py --input data/processed/stardew_wiki_sections.jsonl
+python3 src/build_index.py --input data/processed/stardew_wiki_sections.jsonl
 ```
 
 ### LLM Connection Error

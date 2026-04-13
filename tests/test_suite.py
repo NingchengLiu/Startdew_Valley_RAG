@@ -15,8 +15,8 @@ from pathlib import Path
 from enum import Enum
 from typing import Dict, Any
 
-# Add src2 to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src2"))
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from orchestrator import route_intent, IntentType
 from actions import get_action_handler, ActionContext, ActionType

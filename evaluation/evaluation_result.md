@@ -122,7 +122,7 @@ The agent answered with general flower/crop recommendations but **incorrectly ex
 
 ```bash
 # Terminal 1: start server
-cd src2 && python -m uvicorn app:app --port 8000
+cd src && python -m uvicorn app:app --port 8000
 
 # Terminal 2: run all tests
 cd evaluation && python evaluation.py --output results.json
