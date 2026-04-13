@@ -65,6 +65,31 @@ app = FastAPI(
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+#——
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+
+PASSWORD = "stardew2026"
+
+@app.middleware("http")
+async def password_middleware(request: Request, call_next):
+    if request.url.path in ["/health", "/chat", "/retrieve"]:
+        return await call_next(request)
+    password = request.query_params.get("password") or request.headers.get("x-password")
+    if password != PASSWORD:
+        return HTMLResponse("""
+            <html><body style="font-family:sans-serif;text-align:center;margin-top:100px">
+            <h2>🌾 Stardew Valley Agent</h2>
+            <p>Enter password to continue:</p>
+            <form onsubmit="window.location.href='/?password='+document.getElementById('p').value;return false">
+            <input id="p" type="password" placeholder="Password">
+            <button type="submit">Enter</button>
+            </form></body></html>
+        """, status_code=401)
+    return await call_next(request)
+
+#——
+
 _retriever: Optional[Retriever]  = None
 _llm:       Optional[LLMClient] = None
 

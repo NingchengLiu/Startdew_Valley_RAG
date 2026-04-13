@@ -268,3 +268,26 @@ This includes prerequisites, all 7 installation steps, running tests, troublesho
 
 [![Alt Text](https://github.com/user-attachments/assets/2c7e2a57-214b-44ca-ad87-e87d1da9d1e0)](https://www.youtube.com/watch?v=kNa_qY4sOPI)
 
+## Deployment
+
+### How to start the public demo
+
+**Terminal 1 — Start server:**
+```bash
+cd src
+python -m uvicorn app:app --port 8001
+```
+
+**Terminal 2 — Start ngrok:**
+```bash
+ngrok http 8001
+```
+
+Copy the `Forwarding` URL and share it with anyone who needs access.
+
+**Password:** `stardew2026`
+
+### Notes
+- Both terminals must stay open while the demo is running
+- The ngrok URL changes every time ngrok restarts
+- Do not let your computer sleep during the presentation
