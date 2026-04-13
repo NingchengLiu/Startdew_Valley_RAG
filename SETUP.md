@@ -77,6 +77,7 @@ INFO:     Application startup complete
 ### 7. Access the Chatbot
 
 Open your browser and go to **http://localhost:8000**
+**Note:** If prompted for a password, enter `stardew2026`
 
 You can now ask questions like:
 - "What crops should I plant in spring?"
